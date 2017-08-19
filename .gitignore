@@ -5,6 +5,9 @@
 
 # User-specific stuff:
 .idea/
+*.caj
+*.tmp
+*.pdf
 
 ## File-based project format:
 *.iws
