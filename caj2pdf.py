@@ -7,3 +7,4 @@ if __name__ == "__main__":
     print(caj.page_num)
     print(caj.toc_num)
     caj.output_toc("toc.tmp")
+    caj.convert("output.pdf")
