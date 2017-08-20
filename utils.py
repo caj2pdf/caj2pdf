@@ -65,10 +65,10 @@ def complete_toc(toc):
             j -= 1
             k += 1
             if "prev" not in t and j > -1:
-                if toc[j]["level"] == t["level"]:
+                if toc[j]["level"] == t["level"] and toc[j]["parent"] == t["parent"]:
                     t["prev"] = j + 1
             if "next" not in t and k < len(toc):
-                if toc[k]["level"] == t["level"]:
+                if toc[k]["level"] == t["level"] and toc[k]["parent"] == t["parent"]:
                     t["next"] = k + 1
             if j <= -1 and k >= len(toc):
                 break
@@ -111,15 +111,13 @@ def add_outlines(toc, filename, output):
             PDF.NameObject("/Parent"): idorefs[t["parent"]],
             PDF.NameObject("/Dest"): make_dest(pdf_out, t["page"])
         })
+        opt_keys = {"prev": "/Prev", "next": "/Next", "first": "/First", "last": "/Last"}
+        for k, v in opt_keys.items():
+            if k in t:
+                oli.update({
+                    PDF.NameObject(v): idorefs[t[k]]
+                })
         olitems.append(oli)
-    for ix, olitem in enumerate(olitems[:-1]):
-        olitem.update({
-            PDF.NameObject("/Next"): idorefs[ix + 2]
-        })
-    for ix, olitem in enumerate(olitems[1:]):
-        olitem.update({
-            PDF.NameObject("/Prev"): idorefs[ix + 1]
-        })
     pdf_out._addObject(ol)
     for i in olitems:
         pdf_out._addObject(i)
