@@ -73,8 +73,18 @@ def complete_toc(toc):
             if j <= -1 and k >= len(toc):
                 break
     # First & Last
-    
-
+    for i, t in enumerate(toc):
+        if i < len(toc) - 1 and toc[i + 1]["level"] == t["level"] + 1:
+            t["first"] = i + 2
+            j = i
+            while True:
+                j += 1
+                if j >= len(toc):
+                    t["last"] = j
+                    break
+                if toc[j]["level"] != t["level"] + 1:
+                    t["last"] = j
+                    break
 
 
 def add_outlines(toc, filename, output):

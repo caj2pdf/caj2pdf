@@ -79,7 +79,7 @@ if __name__ == "__main__":
     ]
     #add_outlines(toc, "output.pdf", "ol.pdf")
     complete_toc(toc)
-    k = "next"
+    k = "last"
     for t in toc:
         if k in t:
             print(t[k])
