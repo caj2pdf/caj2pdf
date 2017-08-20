@@ -35,7 +35,7 @@ def fnd_all(f, s):
             return results
 
 
-def makeDest(pdfw, pg):
+def make_dest(pdfw, pg):
     d = PDF.ArrayObject()
     d.append(pdfw.getPage(pg).indirectRef)
     d.append(PDF.NameObject("/XYZ"))
@@ -45,7 +45,40 @@ def makeDest(pdfw, pg):
     return d
 
 
+def complete_toc(toc):
+    # Parent
+    for i, t in enumerate(toc):
+        if t["level"] == 1:
+            t["parent"] = 0
+            continue
+        j = i
+        while True:
+            j -= 1
+            if toc[j]["level"] == t["level"] - 1:
+                break
+        t["parent"] = j + 1
+    # Prev & Next
+    for i, t in enumerate(toc):
+        j = i
+        k = i
+        while True:
+            j -= 1
+            k += 1
+            if "prev" not in t and j > -1:
+                if toc[j]["level"] == t["level"]:
+                    t["prev"] = j + 1
+            if "next" not in t and k < len(toc):
+                if toc[k]["level"] == t["level"]:
+                    t["next"] = k + 1
+            if j <= -1 and k >= len(toc):
+                break
+    # First & Last
+    
+
+
+
 def add_outlines(toc, filename, output):
+    complete_toc(toc)
     pdf_out = PdfFileWriter()
     pdf_in = PdfFileReader(open(filename, 'rb'))
     for p in pdf_in.pages:
@@ -65,8 +98,8 @@ def add_outlines(toc, filename, output):
         oli = PDF.DictionaryObject()
         oli.update({
             PDF.NameObject("/Title"): PDF.TextStringObject(t["title"]),
-            PDF.NameObject("/Parent"): idorefs[0],
-            PDF.NameObject("/Dest"): makeDest(pdf_out, t["page"])
+            PDF.NameObject("/Parent"): idorefs[t["parent"]],
+            PDF.NameObject("/Dest"): make_dest(pdf_out, t["page"])
         })
         olitems.append(oli)
     for ix, olitem in enumerate(olitems[:-1]):
