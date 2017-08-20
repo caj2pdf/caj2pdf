@@ -139,6 +139,7 @@ class CAJParser(Parser):
 
         # Use mutool to repair xref
         call(["mutool", "clean", "pdf.tmp", dest])
+        call(["rm", "-f", "pdf.tmp"])
 
 
 class HNParser(Parser):
