@@ -3,17 +3,22 @@ from subprocess import call
 from utils import fnd, fnd_all, add_outlines
 
 
-class Parser(object):
+class CAJParser(object):
     def __init__(self, filename):
         self.filename = filename
         with open(filename, "rb") as caj:
             fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb2312")
         if fmt == "CAJ":
+            self.format = "CAJ"
             self._PAGE_NUMBER_OFFSET = 0x10
             self._TOC_NUMBER_OFFSET = 0x110
         elif fmt == "HN":
+            self.format = "HN"
             self._PAGE_NUMBER_OFFSET = 0x90
             self._TOC_NUMBER_OFFSET = 0x158
+        else:
+            self.format = None
+            raise SystemExit("Unknown file type.")
 
     @property
     def page_num(self):
@@ -49,12 +54,13 @@ class Parser(object):
                 f.write(b'    ' * (toc["level"] - 1) + toc["title"]
                         + b'    ' + str(toc["page"]).encode("utf-8") + b'\n')
 
-
-class CAJParser(Parser):
-    def __init__(self, filename):
-        super(CAJParser, self).__init__(filename)
-
     def convert(self, dest):
+        if self.format == "CAJ":
+            self._convert_caj(dest)
+        elif self.format == "HN":
+            self._convert_hn(dest)
+
+    def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
 
         # Extract original PDF data (and add header)
@@ -145,6 +151,5 @@ class CAJParser(Parser):
         call(["rm", "-f", "pdf.tmp"])
         call(["rm", "-f", "pdf_toc.pdf"])
 
-
-class HNParser(Parser):
-    pass
+    def _convert_hn(self, dest):
+        raise SystemExit("Unsupported file type.")
