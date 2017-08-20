@@ -1,6 +1,6 @@
 import struct
 from subprocess import call
-from utils import fnd, fnd_all
+from utils import fnd, fnd_all, add_outlines
 
 
 class Parser(object):
@@ -138,8 +138,12 @@ class CAJParser(Parser):
             f.write(pdf_data)
 
         # Use mutool to repair xref
-        call(["mutool", "clean", "pdf.tmp", dest])
+        call(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"])
+
+        # Add Outlines
+        add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
         call(["rm", "-f", "pdf.tmp"])
+        call(["rm", "-f", "pdf_toc.pdf"])
 
 
 class HNParser(Parser):

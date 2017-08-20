@@ -48,6 +48,7 @@ def make_dest(pdfw, pg):
 def complete_toc(toc):
     # Parent
     for i, t in enumerate(toc):
+        t["page"] -= 1  # Page starts at 0.
         if t["level"] == 1:
             t["parent"] = 0
             continue
@@ -107,7 +108,7 @@ def add_outlines(toc, filename, output):
     for t in toc:
         oli = PDF.DictionaryObject()
         oli.update({
-            PDF.NameObject("/Title"): PDF.TextStringObject(t["title"]),
+            PDF.NameObject("/Title"): PDF.TextStringObject(t["title"].decode("utf-8")),
             PDF.NameObject("/Parent"): idorefs[t["parent"]],
             PDF.NameObject("/Dest"): make_dest(pdf_out, t["page"])
         })
