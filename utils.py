@@ -157,7 +157,7 @@ def add_outlines(toc, filename, output):
             n = getattr(t["node"], k)()
             if n is not None:
                 oli.update({
-                    PDF.NameObject(v): idorefs[getattr(t["node"], k)().index()]
+                    PDF.NameObject(v): idorefs[n.index()]
                 })
         olitems.append(oli)
     pdf_out._addObject(ol)
