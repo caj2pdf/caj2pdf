@@ -3,6 +3,70 @@ import PyPDF2.pdf as PDF
 from PyPDF2 import PdfFileWriter, PdfFileReader
 
 
+class Node(object):
+    def __init__(self, data, parent=None, lchild=None, rchild=None):
+        self.data = data
+        self.parent = parent
+        self.lchild = lchild
+        self.rchild = rchild
+
+    def level(self):
+        return self.data["level"]
+
+    def index(self):
+        return self.data["index"]
+
+    def real_parent(self):
+        p = self
+        while True:
+            c = p
+            p = p.parent
+            if p.lchild == c:
+                return p
+            if p.parent is None:
+                return None
+
+    def prev(self):
+        if self.parent.rchild == self:
+            return self.parent
+        else:
+            return None
+
+    def next(self):
+        return self.rchild
+
+    def first(self):
+        return self.lchild
+
+    def last(self):
+        f = self.first()
+        if f is None:
+            return None
+        r = f
+        while r.rchild is not None:
+            r = r.rchild
+        return r
+
+
+class BTree(object):
+    def __init__(self):
+        self.root = Node({"level": 0, "index": 0}, None)
+        self.cursor = self.root
+
+    def current_level(self):
+        return self.cursor.level()
+
+    def insert_as_lchild(self, node):
+        self.cursor.lchild = node
+        node.parent = self.cursor
+        self.cursor = node
+
+    def insert_as_rchild(self, node):
+        self.cursor.rchild = node
+        node.parent = self.cursor
+        self.cursor = node
+
+
 def fnd(f, s, start=0):
     fsize = f.seek(0, os.SEEK_END)
     f.seek(0)
@@ -45,51 +109,28 @@ def make_dest(pdfw, pg):
     return d
 
 
-def complete_toc(toc):
-    # Parent
+def build_outlines_btree(toc):
+    tree = BTree()
     for i, t in enumerate(toc):
         t["page"] -= 1  # Page starts at 0.
-        if t["level"] == 1:
-            t["parent"] = 0
-            continue
-        j = i
-        while True:
-            j -= 1
-            if toc[j]["level"] == t["level"] - 1:
-                break
-        t["parent"] = j + 1
-    # Prev & Next
-    for i, t in enumerate(toc):
-        j = i
-        k = i
-        while True:
-            j -= 1
-            k += 1
-            if "prev" not in t and j > -1:
-                if toc[j]["level"] == t["level"] and toc[j]["parent"] == t["parent"]:
-                    t["prev"] = j + 1
-            if "next" not in t and k < len(toc):
-                if toc[k]["level"] == t["level"] and toc[k]["parent"] == t["parent"]:
-                    t["next"] = k + 1
-            if j <= -1 and k >= len(toc):
-                break
-    # First & Last
-    for i, t in enumerate(toc):
-        if i < len(toc) - 1 and toc[i + 1]["level"] == t["level"] + 1:
-            t["first"] = i + 2
-            j = i
+        t["index"] = i + 1
+        node = Node(t)
+        if t["level"] > tree.current_level():
+            tree.insert_as_lchild(node)
+        elif t["level"] == tree.current_level():
+            tree.insert_as_rchild(node)
+        else:
             while True:
-                j += 1
-                if j >= len(toc):
-                    t["last"] = j
+                p = tree.cursor.real_parent()
+                tree.cursor = p
+                if p.level() == t["level"]:
+                    tree.insert_as_rchild(node)
                     break
-                if toc[j]["level"] != t["level"] + 1:
-                    t["last"] = j
-                    break
+        t["node"] = node
 
 
 def add_outlines(toc, filename, output):
-    complete_toc(toc)
+    build_outlines_btree(toc)
     pdf_out = PdfFileWriter()
     pdf_in = PdfFileReader(open(filename, 'rb'))
     for p in pdf_in.pages:
@@ -109,14 +150,14 @@ def add_outlines(toc, filename, output):
         oli = PDF.DictionaryObject()
         oli.update({
             PDF.NameObject("/Title"): PDF.TextStringObject(t["title"].decode("utf-8")),
-            PDF.NameObject("/Parent"): idorefs[t["parent"]],
             PDF.NameObject("/Dest"): make_dest(pdf_out, t["page"])
         })
-        opt_keys = {"prev": "/Prev", "next": "/Next", "first": "/First", "last": "/Last"}
+        opt_keys = {"real_parent": "/Parent", "prev": "/Prev", "next": "/Next", "first": "/First", "last": "/Last"}
         for k, v in opt_keys.items():
-            if k in t:
+            n = getattr(t["node"], k)()
+            if n is not None:
                 oli.update({
-                    PDF.NameObject(v): idorefs[t[k]]
+                    PDF.NameObject(v): idorefs[getattr(t["node"], k)().index()]
                 })
         olitems.append(oli)
     pdf_out._addObject(ol)
