@@ -10,9 +10,11 @@ class Node(object):
         self.lchild = lchild
         self.rchild = rchild
 
+    @property
     def level(self):
         return self.data["level"]
 
+    @property
     def index(self):
         return self.data["index"]
 
@@ -53,8 +55,9 @@ class BTree(object):
         self.root = Node({"level": 0, "index": 0}, None)
         self.cursor = self.root
 
+    @property
     def current_level(self):
-        return self.cursor.level()
+        return self.cursor.level
 
     def insert_as_lchild(self, node):
         self.cursor.lchild = node
@@ -115,15 +118,15 @@ def build_outlines_btree(toc):
         t["page"] -= 1  # Page starts at 0.
         t["index"] = i + 1
         node = Node(t)
-        if t["level"] > tree.current_level():
+        if t["level"] > tree.current_level:
             tree.insert_as_lchild(node)
-        elif t["level"] == tree.current_level():
+        elif t["level"] == tree.current_level:
             tree.insert_as_rchild(node)
         else:
             while True:
                 p = tree.cursor.real_parent()
                 tree.cursor = p
-                if p.level() == t["level"]:
+                if p.level == t["level"]:
                     tree.insert_as_rchild(node)
                     break
         t["node"] = node
@@ -157,7 +160,7 @@ def add_outlines(toc, filename, output):
             n = getattr(t["node"], k)()
             if n is not None:
                 oli.update({
-                    PDF.NameObject(v): idorefs[n.index()]
+                    PDF.NameObject(v): idorefs[n.index]
                 })
         olitems.append(oli)
     pdf_out._addObject(ol)
