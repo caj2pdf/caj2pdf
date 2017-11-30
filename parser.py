@@ -8,7 +8,7 @@ class CAJParser(object):
         self.filename = filename
         try:
             with open(filename, "rb") as caj:
-                fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb2312")
+                fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb18030")
             if fmt == "CAJ":
                 self.format = "CAJ"
                 self._PAGE_NUMBER_OFFSET = 0x10
@@ -43,7 +43,7 @@ class CAJParser(object):
             for i in range(self.toc_num):
                 caj.seek(self._TOC_NUMBER_OFFSET + 4 + 0x134 * i)
                 toc_bytes = struct.unpack("256s24s12s12si", caj.read(0x134))
-                title = toc_bytes[0].replace(b'\x00', b'').decode("gb2312").encode("utf-8")
+                title = toc_bytes[0].replace(b'\x00', b'').decode("gb18030").encode("utf-8")
                 page = int(toc_bytes[2].replace(b'\x00', b''))
                 level = toc_bytes[4]
                 toc_entry = {"title": title, "page": page, "level": level}
