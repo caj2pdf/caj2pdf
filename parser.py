@@ -150,10 +150,10 @@ class CAJParser(object):
         # Use mutool to repair xref
         call(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"])
 
-        # # Add Outlines
-        # add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
+        # Add Outlines
+        add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
         call(["rm", "-f", "pdf.tmp"])
-        # call(["rm", "-f", "pdf_toc.pdf"])
+        call(["rm", "-f", "pdf_toc.pdf"])
 
     def _convert_hn(self, dest):
         raise SystemExit("Unsupported file type.")
