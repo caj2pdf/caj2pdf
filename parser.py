@@ -104,7 +104,7 @@ class CAJParser(object):
 
         # Add Pages obj and EOF mark
         if fnd(pdf, bytes("\r{0} 0 obj\r<<".format(pages_obj_no), "utf-8")) == -1:
-            kids_addr = fnd_all(pdf, b"/Kids")
+            kids_addr = fnd_all(pdf, bytes("/Parent {0} 0 R".format(pages_obj_no), "utf-8"))
             inds_addr = []
             for kid in kids_addr:
                 ind = kid - 6
