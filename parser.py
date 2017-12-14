@@ -103,46 +103,47 @@ class CAJParser(object):
         pdf = open("pdf.tmp", "rb")
 
         # Add Pages obj and EOF mark
-        kids_addr = fnd_all(pdf, b"/Kids")
-        inds_addr = []
-        for kid in kids_addr:
-            ind = kid - 6
-            while True:
-                pdf.seek(ind)
-                [obj_str] = struct.unpack("6s", pdf.read(6))
-                if obj_str == b"obj\r<<":
-                    break
-                else:
-                    ind = ind - 1
-            ind -= 1
-            pdf.seek(ind)
-            while True:
-                [s] = struct.unpack("s", pdf.read(1))
-                if s == b"\r":
-                    break
-                else:
-                    ind -= 1
+        if fnd(pdf, bytes("\r{0} 0 obj\r<<".format(pages_obj_no), "utf-8")) == -1:
+            kids_addr = fnd_all(pdf, b"/Kids")
+            inds_addr = []
+            for kid in kids_addr:
+                ind = kid - 6
+                while True:
                     pdf.seek(ind)
-            inds_addr.append(ind + 1)
-        inds = []
-        for addr in inds_addr:
-            pdf.seek(addr)
-            length = 0
-            while True:
-                [s] = struct.unpack("s", pdf.read(1))
-                if s == b" ":
-                    break
-                else:
-                    length += 1
-                    pdf.seek(addr + length)
-            pdf.seek(addr)
-            [ind] = struct.unpack(str(length) + "s", pdf.read(length))
-            inds.append(int(ind))
-        inds_str = ["{0} 0 R".format(i) for i in inds]
-        kids_str = "[{0}]".format(" ".join(inds_str))
-        pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj".format(pages_obj_no, kids_str,
-                                                                                            self.page_num)
-        pdf_data += bytes(pages_str, "utf-8")
+                    [obj_str] = struct.unpack("6s", pdf.read(6))
+                    if obj_str == b"obj\r<<":
+                        break
+                    else:
+                        ind = ind - 1
+                ind -= 1
+                pdf.seek(ind)
+                while True:
+                    [s] = struct.unpack("s", pdf.read(1))
+                    if s == b"\r":
+                        break
+                    else:
+                        ind -= 1
+                        pdf.seek(ind)
+                inds_addr.append(ind + 1)
+            inds = []
+            for addr in inds_addr:
+                pdf.seek(addr)
+                length = 0
+                while True:
+                    [s] = struct.unpack("s", pdf.read(1))
+                    if s == b" ":
+                        break
+                    else:
+                        length += 1
+                        pdf.seek(addr + length)
+                pdf.seek(addr)
+                [ind] = struct.unpack(str(length) + "s", pdf.read(length))
+                inds.append(int(ind))
+            inds_str = ["{0} 0 R".format(i) for i in inds]
+            kids_str = "[{0}]".format(" ".join(inds_str))
+            pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj".format(pages_obj_no, kids_str,
+                                                                                                self.page_num)
+            pdf_data += bytes(pages_str, "utf-8")
         pdf_data += bytes("\r\n%%EOF\r", "utf-8")
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
