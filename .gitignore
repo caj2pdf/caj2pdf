@@ -5,6 +5,7 @@
 
 # User-specific stuff:
 .idea/
+.vscode/
 *.caj
 *.tmp
 *.pdf
