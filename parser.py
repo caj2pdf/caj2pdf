@@ -96,7 +96,14 @@ class CAJParser(object):
             [ind] = struct.unpack(str(length) + "s", pdf.read(length))
             inds.append(int(ind))
         pages_obj_no = min(inds)
-        catalog = bytes("1 0 obj\r<</Type /Catalog\r/Pages {0} 0 R\r>>\rendobj\r".format(pages_obj_no), "utf-8")
+        catalog_obj_no = -1
+        for i in range(9999):
+            if fnd(pdf, bytes("\r{0} 0 obj".format(i + 1), "utf-8")) == -1 and i + 1 != pages_obj_no:
+                catalog_obj_no = i + 1
+                break
+        if catalog_obj_no == -1:
+            raise SystemExit("Error on PDF objects numbering.")
+        catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(catalog_obj_no, pages_obj_no), "utf-8")
         pdf_data += catalog
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
