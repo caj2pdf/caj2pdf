@@ -116,7 +116,7 @@ class CAJParser(object):
             pdf.seek(addr)
             [ind] = struct.unpack(str(length) + "s", pdf.read(length))
             inds.append(int(ind))
-        pages_obj_no = sorted(set(inds))
+        pages_obj_no = list(set(inds))
         # find missing pages object(s) -- top pages object(s) in pages_obj_no
         top_pages_obj_no = []
         for pon in pages_obj_no:
@@ -134,8 +134,23 @@ class CAJParser(object):
             if single_pages_obj_missed:
                 root_pages_obj_no = top_pages_obj_no[0]
                 top_pages_obj_no = pages_obj_no
-            else:
-                root_pages_obj_no = pages_obj_no[0]
+            else:  # root pages object exists
+                # find the root pages object #
+                found = False
+                for pon in pages_obj_no:
+                    tmp_addr = fnd(pdf, bytes(
+                        "{0} 0 obj".format(pon), 'utf-8'))
+                    pdf.seek(tmp_addr)
+                    while True:
+                        [_str] = struct.unpack("6s", pdf.read(6))
+                        if _str == b"Parent":
+                            break
+                        elif _str == b"endobj":
+                            root_pages_obj_no = pon
+                            found = True
+                            break
+                    if found:
+                        break
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
             catalog_obj_no, root_pages_obj_no), "utf-8")
         pdf_data += catalog
