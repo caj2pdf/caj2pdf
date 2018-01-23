@@ -116,7 +116,11 @@ class CAJParser(object):
             pdf.seek(addr)
             [ind] = struct.unpack(str(length) + "s", pdf.read(length))
             inds.append(int(ind))
-        pages_obj_no = list(set(inds))
+        # get pages_obj_no list containing distinct elements
+        pages_obj_no = []
+        for ind in inds:
+            if ind not in pages_obj_no:
+                pages_obj_no.append(ind)
         # find missing pages object(s) -- top pages object(s) in pages_obj_no
         top_pages_obj_no = []
         for pon in pages_obj_no:
