@@ -88,15 +88,21 @@ class CAJParser(object):
         # deal with disordered PDF data
         endobj_addr = fnd_all(pdf, b"endobj")
         pdf_data = b"%PDF-1.3\r\n"
+        obj_no = []
         for addr in endobj_addr:
             startobj = fnd_rvrs(pdf, b" 0 obj", addr)
             startobj1 = fnd_rvrs(pdf, b"\r", startobj)
             startobj2 = fnd_rvrs(pdf, b"\n", startobj)
             startobj = max(startobj1, startobj2)
-            obj_len = addr - startobj + 6
+            length = fnd(pdf, b" ", startobj) - startobj
             pdf.seek(startobj)
-            [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
-            pdf_data += (b"\r" + obj)
+            [no] = struct.unpack(str(length) + "s", pdf.read(length))
+            if int(no) not in obj_no:
+                obj_no.append(int(no))
+                obj_len = addr - startobj + 6
+                pdf.seek(startobj)
+                [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
+                pdf_data += (b"\r" + obj)
         pdf_data += b"\r\n"
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
@@ -123,30 +129,28 @@ class CAJParser(object):
         single_pages_obj_missed = len(top_pages_obj_no) == 1
         multi_pages_obj_missed = len(top_pages_obj_no) > 1
         # generate catalog object
+        catalog_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
+        obj_no.append(catalog_obj_no)
         if multi_pages_obj_missed:
-            catalog_obj_no, root_pages_obj_no = fnd_unuse_no(pdf, top_pages_obj_no)
-        else:
-            catalog_obj_no = fnd_unuse_no(pdf, top_pages_obj_no)
-            if single_pages_obj_missed:
-                root_pages_obj_no = top_pages_obj_no[0]
-                top_pages_obj_no = pages_obj_no
-            else:  # root pages object exists
-                # find the root pages object #
-                found = False
-                for pon in pages_obj_no:
-                    tmp_addr = fnd(pdf, bytes(
-                        "{0} 0 obj".format(pon), 'utf-8'))
-                    pdf.seek(tmp_addr)
-                    while True:
-                        [_str] = struct.unpack("6s", pdf.read(6))
-                        if _str == b"Parent":
-                            break
-                        elif _str == b"endobj":
-                            root_pages_obj_no = pon
-                            found = True
-                            break
-                    if found:
+            root_pages_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
+        elif single_pages_obj_missed:
+            root_pages_obj_no = top_pages_obj_no[0]
+            top_pages_obj_no = pages_obj_no
+        else:  # root pages object exists, then find the root pages object #
+            found = False
+            for pon in pages_obj_no:
+                tmp_addr = fnd(pdf, bytes("\r{0} 0 obj".format(pon), 'utf-8'))
+                pdf.seek(tmp_addr)
+                while True:
+                    [_str] = struct.unpack("6s", pdf.read(6))
+                    if _str == b"Parent":
                         break
+                    elif _str == b"endobj":
+                        root_pages_obj_no = pon
+                        found = True
+                        break
+                if found:
+                    break
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
             catalog_obj_no, root_pages_obj_no), "utf-8")
         pdf_data += catalog
@@ -172,16 +176,9 @@ class CAJParser(object):
             count_dict = {i: 0 for i in top_pages_obj_no}
             for tpon in top_pages_obj_no:
                 kids_addr = fnd_all(pdf, bytes("/Parent {0} 0 R".format(tpon), "utf-8"))
-                inds_addr = []
                 for kid in kids_addr:
-                    ind = kid - 6
-                    ind1 = fnd_rvrs(pdf, b"obj\r<<", ind)
-                    ind2 = fnd_rvrs(pdf, b" obj<<", ind)
-                    ind = max(ind1, ind2) - 7
-                    pdf.seek(ind)
-                    ind = fnd_rvrs(pdf, b"\r", ind)
-                    inds_addr.append(ind)
-                for addr in inds_addr:
+                    ind = fnd_rvrs(pdf, b"obj", kid) - 4
+                    addr = fnd_rvrs(pdf, b"\r", ind)
                     length = fnd(pdf, b" ", addr) - addr
                     pdf.seek(addr)
                     [ind] = struct.unpack(str(length) + "s", pdf.read(length))
@@ -195,7 +192,7 @@ class CAJParser(object):
                         pdf.seek(cnt_addr)
                         [_str] = struct.unpack("1s", pdf.read(1))
                         cnt_len = 0
-                        while not _str in [b" ", b"\r", b"/"]:
+                        while _str not in [b" ", b"\r", b"/"]:
                             cnt_len += 1
                             pdf.seek(cnt_addr + cnt_len)
                             [_str] = struct.unpack("1s", pdf.read(1))

@@ -136,26 +136,15 @@ def fnd_all(f, s):
             return results
 
 
-def fnd_unuse_no(pdf, top_pages_obj_no):
-        # find catalog_obj_no
-        catalog_obj_no = -1
-        for i in range(9999):
-            if fnd(pdf, bytes("{0} 0 obj".format(i + 1), "utf-8")) == -1 and not (i + 1 in top_pages_obj_no):
-                catalog_obj_no = i + 1
-                break
-        if catalog_obj_no == -1:
-            raise SystemExit("Error on PDF Catalog objects numbering.")
-        # find root pages_obj_no if multiple pages objects misssed
-        if len(top_pages_obj_no) > 1:
-            root_pages_obj_no = -1
-            for j in range(9999 - catalog_obj_no):
-                if fnd(pdf, bytes("{0} 0 obj".format(j + catalog_obj_no + 1), "utf-8")) == -1 and not (j + catalog_obj_no + 1 in top_pages_obj_no):
-                    root_pages_obj_no = j + catalog_obj_no + 1
-                    break
-            if root_pages_obj_no == -1:
-                raise SystemExit("Error on PDF Pages objects numbering.")
-            return catalog_obj_no, root_pages_obj_no
-        return catalog_obj_no
+def fnd_unuse_no(obj_no, top_pages_obj_no):
+    unuse_no = -1
+    for i in range(9999):
+        if (i + 1 not in obj_no) and (i + 1 not in top_pages_obj_no):
+            unuse_no = i + 1
+            break
+    if unuse_no == -1:
+        raise SystemExit("Error on PDF objects numbering.")
+    return unuse_no
 
 
 def make_dest(pdfw, pg):
