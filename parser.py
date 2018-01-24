@@ -90,11 +90,13 @@ class CAJParser(object):
         pdf_data = b"%PDF-1.3\r\n"
         for addr in endobj_addr:
             startobj = fnd_rvrs(pdf, b" 0 obj", addr)
-            startobj = fnd_rvrs(pdf, b"\r", startobj)
+            startobj1 = fnd_rvrs(pdf, b"\r", startobj)
+            startobj2 = fnd_rvrs(pdf, b"\n", startobj)
+            startobj = max(startobj1, startobj2)
             obj_len = addr - startobj + 6
             pdf.seek(startobj)
             [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
-            pdf_data += (b"\r" + obj + b"\r")
+            pdf_data += (b"\r" + obj)
         pdf_data += b"\r\n"
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
@@ -104,30 +106,20 @@ class CAJParser(object):
         inds_addr = [i + 8 for i in fnd_all(pdf, b"/Parent")]
         inds = []
         for addr in inds_addr:
-            pdf.seek(addr)
-            length = 0
-            while True:
-                [s] = struct.unpack("s", pdf.read(1))
-                if s in [b" ", b"\r", b"/"]:
-                    break
-                else:
-                    length += 1
-                    pdf.seek(addr + length)
+            length = fnd(pdf, b" ", addr) - addr
             pdf.seek(addr)
             [ind] = struct.unpack(str(length) + "s", pdf.read(length))
             inds.append(int(ind))
         # get pages_obj_no list containing distinct elements
+        # & find missing pages object(s) -- top pages object(s) in pages_obj_no
         pages_obj_no = []
-        for ind in inds:
-            if ind not in pages_obj_no:
-                pages_obj_no.append(ind)
-        # find missing pages object(s) -- top pages object(s) in pages_obj_no
         top_pages_obj_no = []
-        for pon in pages_obj_no:
-            if fnd(pdf, bytes("\r{0} 0 obj".format(pon), "utf-8")) == -1:
-                top_pages_obj_no.append(pon)
-        for tpon in top_pages_obj_no:
-            pages_obj_no.remove(tpon)
+        for ind in inds:
+            if (ind not in pages_obj_no) and (ind not in top_pages_obj_no):
+                if fnd(pdf, bytes("\r{0} 0 obj".format(ind), "utf-8")) == -1:
+                    top_pages_obj_no.append(ind)
+                else:
+                    pages_obj_no.append(ind)
         single_pages_obj_missed = len(top_pages_obj_no) == 1
         multi_pages_obj_missed = len(top_pages_obj_no) > 1
         # generate catalog object
@@ -183,34 +175,14 @@ class CAJParser(object):
                 inds_addr = []
                 for kid in kids_addr:
                     ind = kid - 6
-                    while True:
-                        pdf.seek(ind)
-                        [obj_str] = struct.unpack("6s", pdf.read(6))
-                        if obj_str in [b"obj\r<<", b" obj<<"]:
-                            break
-                        else:
-                            ind = ind - 1
-                    ind -= 1
+                    ind1 = fnd_rvrs(pdf, b"obj\r<<", ind)
+                    ind2 = fnd_rvrs(pdf, b" obj<<", ind)
+                    ind = max(ind1, ind2) - 7
                     pdf.seek(ind)
-                    while True:
-                        [s] = struct.unpack("s", pdf.read(1))
-                        if s == b"\r":
-                            break
-                        else:
-                            ind -= 1
-                            pdf.seek(ind)
-                    inds_addr.append(ind + 1)
-                inds = []
+                    ind = fnd_rvrs(pdf, b"\r", ind)
+                    inds_addr.append(ind)
                 for addr in inds_addr:
-                    pdf.seek(addr)
-                    length = 0
-                    while True:
-                        [s] = struct.unpack("s", pdf.read(1))
-                        if s == b" ":
-                            break
-                        else:
-                            length += 1
-                            pdf.seek(addr + length)
+                    length = fnd(pdf, b" ", addr) - addr
                     pdf.seek(addr)
                     [ind] = struct.unpack(str(length) + "s", pdf.read(length))
                     kids_dict[tpon].append(int(ind))
