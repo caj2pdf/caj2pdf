@@ -1,6 +1,6 @@
 import struct
 from subprocess import call
-from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
+from utils import *
 
 
 class CAJParser(object):
@@ -37,7 +37,6 @@ class CAJParser(object):
             [toc_num] = struct.unpack("i", caj.read(4))
             return toc_num
 
-
     def get_toc(self):
         toc = []
         with open(self.filename, "rb") as caj:
@@ -53,7 +52,6 @@ class CAJParser(object):
                 toc.append(toc_entry)
         return toc
 
-
     def output_toc(self, dest):
         toc_items = self.get_toc()
         with open(dest, "wb") as f:
@@ -61,13 +59,11 @@ class CAJParser(object):
                 f.write(b'    ' * (toc["level"] - 1) + toc["title"]
                         + b'    ' + str(toc["page"]).encode("utf-8") + b'\n')
 
-
     def convert(self, dest):
         if self.format == "CAJ":
             self._convert_caj(dest)
         elif self.format == "HN":
             self._convert_hn(dest)
-
 
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
@@ -84,129 +80,54 @@ class CAJParser(object):
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
         pdf = open("pdf.tmp", "rb")
-
-        # deal with disordered PDF data
+        
+        # deal with disordered PDF data -- to get obj_dict & cntts2pg
         endobj_addr = fnd_all(pdf, b"endobj")
-        pdf_data = b"%PDF-1.3\r\n"
-        obj_no = []
+        obj_dict = {}  # object # -> object
+        cntts2pg = {}  # contents -> page obj # & parent obj #
         for addr in endobj_addr:
-            startobj = fnd_rvrs(pdf, b" 0 obj", addr)
-            startobj1 = fnd_rvrs(pdf, b"\r", startobj)
-            startobj2 = fnd_rvrs(pdf, b"\n", startobj)
-            startobj = max(startobj1, startobj2)
-            length = fnd(pdf, b" ", startobj) - startobj
-            pdf.seek(startobj)
-            [no] = struct.unpack(str(length) + "s", pdf.read(length))
-            if int(no) not in obj_no:
-                obj_no.append(int(no))
-                obj_len = addr - startobj + 6
-                pdf.seek(startobj)
-                [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
-                pdf_data += (b"\r" + obj)
-        pdf_data += b"\r\n"
-        with open("pdf.tmp", 'wb') as f:
-            f.write(pdf_data)
-        pdf = open("pdf.tmp", "rb")
-
-        # Add Catalog (find obj_no of pages)
-        inds_addr = [i + 8 for i in fnd_all(pdf, b"/Parent")]
-        inds = []
-        for addr in inds_addr:
-            length = fnd(pdf, b" ", addr) - addr
-            pdf.seek(addr)
-            [ind] = struct.unpack(str(length) + "s", pdf.read(length))
-            inds.append(int(ind))
-        # get pages_obj_no list containing distinct elements
-        # & find missing pages object(s) -- top pages object(s) in pages_obj_no
-        pages_obj_no = []
-        top_pages_obj_no = []
-        for ind in inds:
-            if (ind not in pages_obj_no) and (ind not in top_pages_obj_no):
-                if fnd(pdf, bytes("\r{0} 0 obj".format(ind), "utf-8")) == -1:
-                    top_pages_obj_no.append(ind)
-                else:
-                    pages_obj_no.append(ind)
-        single_pages_obj_missed = len(top_pages_obj_no) == 1
-        multi_pages_obj_missed = len(top_pages_obj_no) > 1
-        # generate catalog object
-        catalog_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
-        obj_no.append(catalog_obj_no)
-        if multi_pages_obj_missed:
-            root_pages_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
-        elif single_pages_obj_missed:
-            root_pages_obj_no = top_pages_obj_no[0]
-            top_pages_obj_no = pages_obj_no
-        else:  # root pages object exists, then find the root pages object #
-            found = False
-            for pon in pages_obj_no:
-                tmp_addr = fnd(pdf, bytes("\r{0} 0 obj".format(pon), 'utf-8'))
-                pdf.seek(tmp_addr)
-                while True:
-                    [_str] = struct.unpack("6s", pdf.read(6))
-                    if _str == b"Parent":
-                        break
-                    elif _str == b"endobj":
-                        root_pages_obj_no = pon
-                        found = True
-                        break
-                if found:
-                    break
+            st_ = fnd_rvrs(pdf, b" 0 obj", addr)
+            st_ = max(fnd_rvrs(pdf, b"\r", st_), fnd_rvrs(pdf, b"\n", st_))  # '\r' or '\n' before object
+            no = rd_int(pdf, st_)
+            if no not in obj_dict:
+                obj_len = addr - st_ + 6
+                pdf.seek(st_)
+                [obj] = struct.unpack(str(obj_len)+"s", pdf.read(obj_len))
+                if obj.find(b"/Pages") >= 0:  # discard all pages object(s)
+                    continue
+                obj_dict[no] = obj
+                if obj.find(b"/Contents") >= 0:  # equivalent to that this is a page object
+                    con_st = fnd(pdf, b"/Contents ", st_) + 10 + (obj.find(b"/Contents [")>=0)  # only one contents # is needed
+                    contents = rd_int(pdf, con_st)
+                    parent_st = fnd(pdf, b"/Parent ", st_) + 8
+                    parent = rd_int(pdf, parent_st)
+                    cntts2pg[contents] = {'page': no, 'parent': parent}
+        # generate catelog obj # & root pages obj (the only pages obj) #
+        ctlg_no = fnd_unuse_no(list(obj_dict.keys()), [])
+        root_pgs_no = fnd_unuse_no(list(obj_dict.keys()), [ctlg_no])
+        # determine root pages obj's kids
+        kids = []
+        for no in obj_dict:
+            if no in cntts2pg:
+                pg = cntts2pg[no]['page']
+                kids.append(pg)   # ordered as the order in which contents objs appear in .caj file
+                old = bytes("/Parent {0}".format(cntts2pg[no]['parent']), 'utf-8')
+                new = bytes("/Parent {0}".format(root_pgs_no), 'utf-8')
+                obj_dict[pg].replace(old, new)  # change all page objects' parent to root pages obj
+        # generate catalog obj, root pages obj and final pdf data
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
-            catalog_obj_no, root_pages_obj_no), "utf-8")
-        pdf_data += catalog
-        with open("pdf.tmp", 'wb') as f:
-            f.write(pdf_data)
-        pdf = open("pdf.tmp", "rb")
-
-        # Add Pages obj and EOF mark
-        # if root pages object exist, pass
-        # deal with single missing pages object
-        if single_pages_obj_missed or multi_pages_obj_missed:
-            inds_str = ["{0} 0 R".format(i) for i in top_pages_obj_no]
-            kids_str = "[{0}]".format(" ".join(inds_str))
-            pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj\r".format(
-                root_pages_obj_no, kids_str, self.page_num)
-            pdf_data += bytes(pages_str, "utf-8")
-            with open("pdf.tmp", 'wb') as f:
-                f.write(pdf_data)
-            pdf = open("pdf.tmp", "rb")
-        # deal with multiple missing pages objects
-        if multi_pages_obj_missed:
-            kids_dict = {i: [] for i in top_pages_obj_no}
-            count_dict = {i: 0 for i in top_pages_obj_no}
-            for tpon in top_pages_obj_no:
-                kids_addr = fnd_all(pdf, bytes("/Parent {0} 0 R".format(tpon), "utf-8"))
-                for kid in kids_addr:
-                    ind = fnd_rvrs(pdf, b"obj", kid) - 4
-                    addr = fnd_rvrs(pdf, b"\r", ind)
-                    length = fnd(pdf, b" ", addr) - addr
-                    pdf.seek(addr)
-                    [ind] = struct.unpack(str(length) + "s", pdf.read(length))
-                    kids_dict[tpon].append(int(ind))
-                    type_addr = fnd(pdf, b"/Type", addr) + 5
-                    tmp_addr = fnd(pdf, b"/", type_addr) + 1
-                    pdf.seek(tmp_addr)
-                    [_type] = struct.unpack("5s", pdf.read(5))
-                    if _type == b"Pages":
-                        cnt_addr = fnd(pdf, b"/Count ", addr) + 7
-                        pdf.seek(cnt_addr)
-                        [_str] = struct.unpack("1s", pdf.read(1))
-                        cnt_len = 0
-                        while _str not in [b" ", b"\r", b"/"]:
-                            cnt_len += 1
-                            pdf.seek(cnt_addr + cnt_len)
-                            [_str] = struct.unpack("1s", pdf.read(1))
-                        pdf.seek(cnt_addr)
-                        [cnt] = struct.unpack(str(cnt_len) + "s", pdf.read(cnt_len))
-                        count_dict[tpon] += int(cnt)
-                    else:  # _type == b"Page"
-                        count_dict[tpon] += 1
-                kids_no_str = ["{0} 0 R".format(i) for i in kids_dict[tpon]]
-                kids_str = "[{0}]".format(" ".join(kids_no_str))
-                pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj\r".format(
-                    tpon, kids_str, count_dict[tpon])
-                pdf_data += bytes(pages_str, "utf-8")
-        pdf_data += bytes("\n%%EOF\r", "utf-8")
+            ctlg_no, root_pgs_no), "utf-8")
+        kids_str = ["{0} 0 R".format(i) for i in kids]
+        kids_strs = "[{0}]".format(" ".join(kids_str))
+        pages = bytes("{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj\r".format(
+            root_pgs_no, kids_strs, self.page_num), 'utf-8')
+        objs = list(obj_dict.values())
+        pdf_data = b"%PDF-1.3\r\n"
+        for obj in objs:
+            pdf_data += b'\r' + obj
+        pdf_data += b'\r' + pages + b'\r' + catalog
+        pdf_data += b"\n%%EOF\r"
+        # write pdf data to file
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
 
