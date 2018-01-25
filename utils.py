@@ -1,6 +1,8 @@
 import os
+import sys
 import PyPDF2.pdf as PDF
 from PyPDF2 import PdfFileWriter, PdfFileReader
+import struct
 
 
 class Node(object):
@@ -90,6 +92,39 @@ def fnd(f, s, start=0):
             return -1
 
 
+def fnd_rvrs(f, s, end=sys.maxsize):
+    # find target in reverse direction
+    fsize = f.seek(0, os.SEEK_END)
+    bsize = 4096
+    if len(s) > end:
+        raise SystemExit("Too large string size for search.")
+    f.seek(fsize - bsize)
+    buffer = None
+    size = bsize
+    if bsize <= end < fsize:
+        f.seek(end - bsize)
+    elif 0 < end < bsize:
+        size = end
+        f.seek(0)
+    overlap = len(s) - 1
+    s = s[::-1]
+    while True:
+        buffer = f.read(size)
+        if buffer:
+            buffer = buffer[::-1]
+            pos = buffer.find(s)
+            if pos >= 0:
+                return f.tell() - pos
+        if (2 * bsize - overlap) < f.tell():
+            f.seek(f.tell() - (2 * bsize - overlap))
+            size = bsize
+        elif (bsize - overlap) < f.tell():
+            size = f.tell() - (bsize - overlap)
+            f.seek(0)
+        else:
+            return -1
+
+
 def fnd_all(f, s):
     results = []
     last_addr = -len(s)
@@ -100,6 +135,29 @@ def fnd_all(f, s):
             last_addr = addr
         else:
             return results
+
+
+def fnd_unuse_no(nos1, nos2):
+    unuse_no = -1
+    for i in range(9999):
+        if (i + 1 not in nos1) and (i + 1 not in nos2):
+            unuse_no = i + 1
+            break
+    if unuse_no == -1:
+        raise SystemExit("Error on PDF objects numbering.")
+    return unuse_no
+
+
+def rd_int(f, start_addr, stop_mark=[b" "]):
+    length = 0
+    while True:
+        f.seek(start_addr + length)
+        [_str] = struct.unpack("s", f.read(1))
+        if _str in stop_mark:
+            f.seek(start_addr)
+            [n] = struct.unpack(str(length)+'s', f.read(length))
+            return int(n)
+        length += 1
 
 
 def make_dest(pdfw, pg):
@@ -140,7 +198,8 @@ def add_outlines(toc, filename, output):
         pdf_out.addPage(p)
     toc_num = len(toc)
     idoix = len(pdf_out._objects) + 1
-    idorefs = [PDF.IndirectObject(x + idoix, 0, pdf_out) for x in range(toc_num + 1)]
+    idorefs = [PDF.IndirectObject(x + idoix, 0, pdf_out)
+               for x in range(toc_num + 1)]
     ol = PDF.DictionaryObject()
     ol.update({
         PDF.NameObject("/Type"): PDF.NameObject("/Outlines"),
@@ -155,7 +214,8 @@ def add_outlines(toc, filename, output):
             PDF.NameObject("/Title"): PDF.TextStringObject(t["title"].decode("utf-8")),
             PDF.NameObject("/Dest"): make_dest(pdf_out, t["page"])
         })
-        opt_keys = {"real_parent": "/Parent", "prev": "/Prev", "next": "/Next", "first": "/First", "last": "/Last"}
+        opt_keys = {"real_parent": "/Parent", "prev": "/Prev",
+                    "next": "/Next", "first": "/First", "last": "/Last"}
         for k, v in opt_keys.items():
             n = getattr(t["node"], k)()
             if n is not None:
