@@ -37,7 +37,6 @@ class CAJParser(object):
             [toc_num] = struct.unpack("i", caj.read(4))
             return toc_num
 
-
     def get_toc(self):
         toc = []
         with open(self.filename, "rb") as caj:
@@ -53,7 +52,6 @@ class CAJParser(object):
                 toc.append(toc_entry)
         return toc
 
-
     def output_toc(self, dest):
         toc_items = self.get_toc()
         with open(dest, "wb") as f:
@@ -61,13 +59,11 @@ class CAJParser(object):
                 f.write(b'    ' * (toc["level"] - 1) + toc["title"]
                         + b'    ' + str(toc["page"]).encode("utf-8") + b'\n')
 
-
     def convert(self, dest):
         if self.format == "CAJ":
             self._convert_caj(dest)
         elif self.format == "HN":
             self._convert_hn(dest)
-
 
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
