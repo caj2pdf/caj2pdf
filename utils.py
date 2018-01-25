@@ -2,7 +2,6 @@ import os
 import sys
 import PyPDF2.pdf as PDF
 from PyPDF2 import PdfFileWriter, PdfFileReader
-import struct
 
 
 class Node(object):
@@ -146,18 +145,6 @@ def fnd_unuse_no(nos1, nos2):
     if unuse_no == -1:
         raise SystemExit("Error on PDF objects numbering.")
     return unuse_no
-
-
-def rd_int(f, start_addr, stop_mark=[b" "]):
-    length = 0
-    while True:
-        f.seek(start_addr + length)
-        [_str] = struct.unpack("s", f.read(1))
-        if _str in stop_mark:
-            f.seek(start_addr)
-            [n] = struct.unpack(str(length)+'s', f.read(length))
-            return int(n)
-        length += 1
 
 
 def make_dest(pdfw, pg):
