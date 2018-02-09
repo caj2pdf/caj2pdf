@@ -2,7 +2,7 @@
 
 import argparse
 from subprocess import call
-from parser import CAJParser
+from cajparser import CAJParser
 from utils import add_outlines
 
 if __name__ == "__main__":
