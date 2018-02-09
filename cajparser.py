@@ -1,3 +1,4 @@
+import os
 import struct
 from subprocess import call
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
@@ -213,8 +214,9 @@ class CAJParser(object):
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
-        call(["rm", "-f", "pdf.tmp"])
-        call(["rm", "-f", "pdf_toc.pdf"])
+        pdf.close()
+        os.remove("pdf.tmp")
+        os.remove("pdf_toc.pdf")
 
     def _convert_hn(self, dest):
         raise SystemExit("Unsupported file type.")
