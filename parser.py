@@ -127,6 +127,7 @@ class CAJParser(object):
         # generate catalog object
         catalog_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
         obj_no.append(catalog_obj_no)
+        root_pages_obj_no = None
         if multi_pages_obj_missed:
             root_pages_obj_no = fnd_unuse_no(obj_no, top_pages_obj_no)
         elif single_pages_obj_missed:
@@ -136,8 +137,8 @@ class CAJParser(object):
             found = False
             for pon in pages_obj_no:
                 tmp_addr = fnd(pdf, bytes("\r{0} 0 obj".format(pon), 'utf-8'))
-                pdf.seek(tmp_addr)
                 while True:
+                    pdf.seek(tmp_addr)
                     [_str] = struct.unpack("6s", pdf.read(6))
                     if _str == b"Parent":
                         break
@@ -145,6 +146,7 @@ class CAJParser(object):
                         root_pages_obj_no = pon
                         found = True
                         break
+                    tmp_addr = tmp_addr + 1
                 if found:
                     break
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
