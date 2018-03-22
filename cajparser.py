@@ -1,6 +1,6 @@
 import os
 import struct
-from subprocess import call
+from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
 
@@ -210,7 +210,11 @@ class CAJParser(object):
             f.write(pdf_data)
 
         # Use mutool to repair xref
-        call(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"])
+        try:
+            check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
+        except CalledProcessError as e:
+            print(e.output.decode("utf-8"))
+            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)

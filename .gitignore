@@ -9,6 +9,7 @@
 *.caj
 *.tmp
 *.pdf
+cajs/
 
 ## File-based project format:
 *.iws
