@@ -48,3 +48,10 @@ caj2pdf convert test.caj -o output.pdf
 caj2pdf outlines test.caj -o printed.pdf
 ```
 
+### 异常输出（IMPORTANT!!!）
+
+尽管这个项目目前有不少同学关注到了，但它**仍然只支持部分 caj 文件的转换**，必须承认这完全不是一个对普通用户足够友好的成熟项目。具体支持哪些不支持哪些，在前文也已经说了，但似乎很多同学并没有注意到。所以**如果你遇到以下两种输出，本项目目前无法帮助到你**。与此相关的 issue 不再回复。
+
+- `Unknown file type.`：未知文件类型；
+- `Unsupported file type.`： 尚不支持的 HN 格式。
+
