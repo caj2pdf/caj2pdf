@@ -22,7 +22,7 @@
 
 ### 环境和依赖
 
-- Python 3
+- Python 3.3+
 - [PyPDF2](https://github.com/mstamy2/PyPDF2)
 - [mutool](https://mupdf.com/index.html)
 
