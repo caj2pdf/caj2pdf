@@ -18,7 +18,7 @@
 
 如果你对二进制文件分析、图像/文字压缩算法、逆向工程等领域中的一个或几个有所了解，欢迎帮助完善此项目。你可以从阅读[项目 Wiki](https://github.com/JeziL/caj2pdf/wiki) 开始，看看是否有可以发挥你特长的地方。**Pull requests are always welcome**.
 
-## How to use
+## How to use for linux
 
 ### 环境和依赖
 
@@ -59,9 +59,9 @@ caj2pdf outlines test.caj -o printed.pdf
 ### 环境搭建
 
 1）安装pypdf2
-　　pip install pypdf2　　
+　　pip install pypdf2
 2）引入mutool工具
-　　下载mupdf-xxx-windows.zip，解压缩包。　　
+　　下载 mupdf-xxx-windows.zip ，解压缩包。
 　　把mutool.exe执行文件放在项目根目录下（项目中已放置了v1.13.0版本）。　　
 
 
