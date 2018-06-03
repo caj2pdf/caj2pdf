@@ -58,10 +58,10 @@ caj2pdf outlines test.caj -o printed.pdf
 
 ### 环境搭建
 
-1）安装pypdf2
-　　pip install pypdf2
-2）引入mutool工具
-　　下载 mupdf-xxx-windows.zip ，解压缩包。
+1）安装pypdf2  
+　　pip install pypdf2  
+2）引入mutool工具  
+　　下载 mupdf-xxx-windows.zip ，解压缩包。  
 　　把mutool.exe执行文件放在项目根目录下（项目中已放置了v1.13.0版本）。　　
 
 
