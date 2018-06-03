@@ -48,6 +48,46 @@ caj2pdf convert test.caj -o output.pdf
 caj2pdf outlines test.caj -o printed.pdf
 ```
 
+## How to use for windows
+
+### 环境和依赖
+
+- Python 3.3+
+- [PyPDF2](https://github.com/mstamy2/PyPDF2)
+- [mutool](https://mupdf.com/downloads/)
+
+### 环境搭建
+
+1）安装pypdf2
+　　pip install pypdf2　　
+2）引入mutool工具
+　　下载mupdf-xxx-windows.zip，解压缩包。　　
+　　把mutool.exe执行文件放在项目根目录下（项目中已放置了v1.13.0版本）。　　
+
+
+### 用法
+
+```
+
+# 打印文件基本信息（文件类型、页面数、大纲项目数）
+python caj2pdf show [input_file]
+
+# 转换文件
+python caj2pdf convert [input_file] -o/--output [output_file]
+
+# 从 CAJ 文件中提取大纲信息并添加至 PDF 文件
+## 遇到不支持的文件类型或 Bug 时，可用 CAJViewer 打印 PDF 文件，并用这条命令为其添加大纲
+python caj2pdf outlines [input_file] -o/--output [pdf_file]
+```
+
+### 例
+
+```
+python caj2pdf show test.caj
+python caj2pdf convert test.caj -o output.pdf
+python caj2pdf outlines test.caj -o printed.pdf
+```
+
 ### 异常输出（IMPORTANT!!!）
 
 尽管这个项目目前有不少同学关注到了，但它**仍然只支持部分 caj 文件的转换**，必须承认这完全不是一个对普通用户足够友好的成熟项目。具体支持哪些不支持哪些，在前文也已经说了，但似乎很多同学并没有注意到。所以**如果你遇到以下两种输出，本项目目前无法帮助到你**。与此相关的 issue 不再回复。
