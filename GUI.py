@@ -13,7 +13,7 @@ origincaj=0
 def liulancajfunc():
 	#print('1')
 	global origincaj
-	origincaj=tkinter.filedialog.askopenfilename(filetypes=[('CAJ','caj'),('所有文件','**')],initialdir='D:\Dropbox\Github\caj2pdf')
+	origincaj=tkinter.filedialog.askopenfilename(filetypes=[('CAJ','caj'),('所有文件','**')],initialdir='C:\\')
 	#print(origincaj[0:-3]+'pdf')
 	caj.set(os.path.basename(origincaj)) #显示caj文件名
 def liulanpdffunc():
@@ -59,6 +59,7 @@ def addindex():
     root.geometry('%dx%d+%d+%d' % (w, h, x, y))'''
 
 root=Tk()
+root.title("caj2pdf")
 #root.maxsize(200,150)
 #设置可变的标签内容
 #center_window(200,150)#x*y
