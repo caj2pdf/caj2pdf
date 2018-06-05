@@ -125,3 +125,4 @@ ENV/
 
 # Rope project settings
 .ropeproject
+*.exe
