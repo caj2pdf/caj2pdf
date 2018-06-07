@@ -55,3 +55,7 @@ caj2pdf outlines test.caj -o printed.pdf
 - `Unknown file type.`：未知文件类型；
 - `Unsupported file type.`： 尚不支持的 HN 格式。
 
+## License
+
+本项目基于 [GLWTPL](https://github.com/me-shaon/GLWTPL/blob/master/LICENSE)  (Good Luck With That Public License) 许可证开源。
+
