@@ -57,5 +57,5 @@ caj2pdf outlines test.caj -o printed.pdf
 
 ## License
 
-本项目基于 [GLWTPL](https://github.com/me-shaon/GLWTPL/blob/master/LICENSE)  (Good Luck With That Public License) 许可证开源。
+本项目基于 [GLWTPL](https://github.com/me-shaon/GLWTPL)  (Good Luck With That Public License) 许可证开源。
 
