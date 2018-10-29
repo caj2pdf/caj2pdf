@@ -1,4 +1,6 @@
 # caj2pdf
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FJeziL%2Fcaj2pdf.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FJeziL%2Fcaj2pdf?ref=badge_shield)
+
 
 ## Why
 
@@ -59,3 +61,6 @@ caj2pdf outlines test.caj -o printed.pdf
 
 本项目基于 [GLWTPL](https://github.com/me-shaon/GLWTPL)  (Good Luck With That Public License) 许可证开源。
 
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FJeziL%2Fcaj2pdf.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FJeziL%2Fcaj2pdf?ref=badge_large)
