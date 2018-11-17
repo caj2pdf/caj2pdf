@@ -97,7 +97,7 @@ class CAJParser(object):
                     continue
                 obj_dict[no] = obj
                 if obj.find(b"/Contents") >= 0:  # equivalent to that this is a page object
-                    con_st = fnd(pdf, b"/Contents ", st_) + 10 + (obj.find(b"/Contents [")>=0)  # only one contents # is needed
+                    con_st = fnd(pdf, b"/Contents", st_) + 10 + (obj.find(b"/Contents [")>=0)  # only one contents # is needed
                     contents = rd_int(pdf, con_st)
                     parent_st = fnd(pdf, b"/Parent ", st_) + 8
                     parent = rd_int(pdf, parent_st)
