@@ -113,7 +113,7 @@ class CAJParser(object):
                 kids.append(pg)   # ordered as the order in which contents objs appear in .caj file
                 old = bytes("/Parent {0}".format(cntts2pg[no]['parent']), 'utf-8')
                 new = bytes("/Parent {0}".format(root_pgs_no), 'utf-8')
-                obj_dict[pg].replace(old, new)  # change all page objects' parent to root pages obj
+                obj_dict[pg] = obj_dict[pg].replace(old, new)  # change all page objects' parent to root pages obj
         # generate catalog obj, root pages obj and final pdf data
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
             ctlg_no, root_pgs_no), "utf-8")
