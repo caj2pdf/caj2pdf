@@ -127,6 +127,7 @@ class CAJParser(object):
         pdf_data += b'\r' + pages + b'\r' + catalog
         pdf_data += b"\n%%EOF\r"
         # write pdf data to file
+        pdf.close()
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
 
