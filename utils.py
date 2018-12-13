@@ -193,7 +193,8 @@ def build_outlines_btree(toc):
 def add_outlines(toc, filename, output):
     build_outlines_btree(toc)
     pdf_out = PdfFileWriter()
-    pdf_in = PdfFileReader(open(filename, 'rb'))
+    in_file = open(filename, 'rb')
+    pdf_in = PdfFileReader(in_file)
     for p in pdf_in.pages:
         pdf_out.addPage(p)
     toc_num = len(toc)
@@ -232,3 +233,4 @@ def add_outlines(toc, filename, output):
     outputFile = open(output, "wb")
     pdf_out.write(outputFile)
     outputFile.close()
+    in_file.close()
