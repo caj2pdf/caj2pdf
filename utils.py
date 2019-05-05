@@ -138,9 +138,9 @@ def fnd_all(f, s):
 
 def fnd_unuse_no(nos1, nos2):
     unuse_no = -1
-    for i in range(9999):
-        if (i + 1 not in nos1) and (i + 1 not in nos2):
-            unuse_no = i + 1
+    for i in range(99999):
+        if (99999 - i not in nos1) and (99999 - i not in nos2):
+            unuse_no = 99999 - i
             break
     if unuse_no == -1:
         raise SystemExit("Error on PDF objects numbering.")
