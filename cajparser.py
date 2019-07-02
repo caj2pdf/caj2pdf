@@ -1,5 +1,6 @@
 import os
 import struct
+from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
@@ -18,6 +19,8 @@ class CAJParser(object):
                 self.format = "HN"
                 self._PAGE_NUMBER_OFFSET = 0x90
                 self._TOC_NUMBER_OFFSET = 0x158
+            elif fmt == "%PDF":
+                self.format = "PDF"
             else:
                 self.format = None
                 raise SystemExit("Unknown file type.")
@@ -65,6 +68,8 @@ class CAJParser(object):
             self._convert_caj(dest)
         elif self.format == "HN":
             self._convert_hn(dest)
+        elif self.format == "PDF":
+            self._convert_pdf(dest)
 
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
@@ -224,3 +229,6 @@ class CAJParser(object):
 
     def _convert_hn(self, dest):
         raise SystemExit("Unsupported file type.")
+
+    def _convert_pdf(self, dest):
+        copy(self.filename, dest)

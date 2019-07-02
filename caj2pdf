@@ -24,12 +24,15 @@ if __name__ == "__main__":
 
     if args.command == "show":
         caj = CAJParser(args.input)
-        print("File: {0}\nType: {1}\nPage count: {2}\nOutlines count: {3}\n".format(
-            args.input,
-            caj.format,
-            caj.page_num,
-            caj.toc_num
-        ))
+        if caj.format == "PDF":
+            print("File: {0}\nType: {1}\n".format(args.input, caj.format))
+        else:
+            print("File: {0}\nType: {1}\nPage count: {2}\nOutlines count: {3}\n".format(
+                args.input,
+                caj.format,
+                caj.page_num,
+                caj.toc_num
+            ))
 
     if args.command == "convert":
         caj = CAJParser(args.input)
@@ -37,6 +40,8 @@ if __name__ == "__main__":
 
     if args.command == "outlines":
         caj = CAJParser(args.input)
+        if caj.format == "PDF":
+            raise SystemExit("Unsupported file type: PDF.")
         toc = caj.get_toc()
         add_outlines(toc, args.output, "tmp.pdf")
         os.replace("tmp.pdf", args.output)
