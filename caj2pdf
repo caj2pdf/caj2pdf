@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     convert_parser = subparsers.add_parser("convert", help="Convert the CAJ file to PDF file.")
     convert_parser.add_argument("input", help="Path to the CAJ file.")
-    convert_parser.add_argument("-o", "--output", help="Output path to the PDF file.", required=True)
+    convert_parser.add_argument("-o", "--output", help="Output path to the PDF file.", required=False)
 
     outlines_parser = subparsers.add_parser("outlines", help="Extract outlines from the CAJ file and add it to PDF file.")
     outlines_parser.add_argument("input", help="Path to the CAJ file.")
@@ -36,6 +36,8 @@ if __name__ == "__main__":
 
     if args.command == "convert":
         caj = CAJParser(args.input)
+        if args.output is None:
+            args.output = args.input.replace(".caj", ".pdf")
         caj.convert(args.output)
 
     if args.command == "outlines":
