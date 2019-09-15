@@ -82,12 +82,16 @@ class CAJParser(object):
                 toc.append(toc_entry)
         return toc
 
-    def output_toc(self, dest):
+    def output_toc(self, dest: str):
+        """向 *dest* 所指的目标文件输出文档的目录"""
         toc_items = self.get_toc()
-        with open(dest, "wb") as f:
+        with open(dest, "wt", encoding="utf-8") as f:
             for toc in toc_items:
-                f.write(b'    ' * (toc["level"] - 1) + toc["title"]
-                        + b'    ' + str(toc["page"]).encode("utf-8") + b'\n')
+                f.write("{indent}{title}    {page}\n".format(
+                    indent="    " * (toc["level"] - 1),
+                    title=toc["title"].decode("utf-8"),
+                    page=toc["page"]
+                ))
 
     def convert(self, dest):
         if self.format == "CAJ":
