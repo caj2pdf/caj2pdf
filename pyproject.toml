@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "caj2pdf"
+version = "0.1.0"
+description = "Conver CAJ(China Academic Journals) file to PDF"
+authors = ["JeziL <wangjinlithu@gmail.com>",
+            "Maybeka <Guxihanx@gmail.com>",
+            "zombie110year <zombie110year@outlook.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+pypdf2 = "^1.26"
+
+[tool.poetry.dev-dependencies]
+pyinstaller = "^3.5"
+pylint = "^2.3"
+autopep8 = "^1.4"
+pytest = "^5.1"
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
