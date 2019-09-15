@@ -7,6 +7,9 @@ from .utils import add_outlines, fnd, fnd_all, fnd_rvrs, fnd_unuse_no
 
 
 class CAJParser(object):
+
+    # 一条目录的存储长度，单位字节
+    TOC_LENGTH = 308
     def __init__(self, filename):
         self.filename = filename
         try:
@@ -45,6 +48,28 @@ class CAJParser(object):
             return toc_num
 
     def get_toc(self):
+        """获取 caj 文件的目录
+
+        .. code:: c
+
+            struct toc_item {
+                char title[256];    // 0
+                char ???[24];       // 1
+                char page[12];      // 2
+                char ???[12];       // 3
+                int level;          // 4
+            }
+
+        :rtype: list
+
+        返回值列表中的元素为字典::
+
+            {
+                "title": bytes, # utf-8 编码
+                "page": int,
+                "level": int
+            }
+        """
         toc = []
         with open(self.filename, "rb") as caj:
             for i in range(self.toc_num):
