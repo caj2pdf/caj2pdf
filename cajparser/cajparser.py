@@ -11,7 +11,8 @@ class CAJParser(object):
         self.filename = filename
         try:
             with open(filename, "rb") as caj:
-                fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb18030")
+                magic_number = caj.read(4).strip(b"\x00")
+                fmt = magic_number.decode("gbk")
             if fmt == "CAJ":
                 self.format = "CAJ"
                 self._PAGE_NUMBER_OFFSET = 0x10
