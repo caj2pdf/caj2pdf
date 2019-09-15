@@ -75,10 +75,8 @@ class CAJParser(object):
             for i in range(self.toc_num):
                 caj.seek(self._TOC_NUMBER_OFFSET + 4 + self.TOC_LENGTH * i)
                 toc_bytes = struct.unpack("256s24s12s12si", caj.read(self.TOC_LENGTH))
-                title_text_end = toc_bytes[0].find(b"\x00")
-                title = toc_bytes[0][0:title_text_end].decode("gb18030").encode("utf-8")
-                pg_end = toc_bytes[2].find(b"\x00")
-                page = int(toc_bytes[2][0:pg_end])
+                title = toc_bytes[0].strip(b"\x00").decode("gbk").encode("utf-8")
+                page = int(toc_bytes[2].strip(b"\x00"))
                 level = toc_bytes[4]
                 toc_entry = {"title": title, "page": page, "level": level}
                 toc.append(toc_entry)
