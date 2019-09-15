@@ -10,6 +10,7 @@ class CAJParser(object):
 
     # 一条目录的存储长度，单位字节
     TOC_LENGTH = 308
+
     def __init__(self, filename):
         self.filename = filename
         try:
@@ -74,7 +75,8 @@ class CAJParser(object):
         with open(self.filename, "rb") as caj:
             for i in range(self.toc_num):
                 caj.seek(self._TOC_NUMBER_OFFSET + 4 + self.TOC_LENGTH * i)
-                toc_bytes = struct.unpack("256s24s12s12si", caj.read(self.TOC_LENGTH))
+                toc_bytes = struct.unpack(
+                    "256s24s12s12si", caj.read(self.TOC_LENGTH))
                 title = toc_bytes[0].strip(b"\x00").decode("gbk")
                 page = int(toc_bytes[2].strip(b"\x00"))
                 level = toc_bytes[4]
@@ -209,7 +211,8 @@ class CAJParser(object):
             kids_dict = {i: [] for i in top_pages_obj_no}
             count_dict = {i: 0 for i in top_pages_obj_no}
             for tpon in top_pages_obj_no:
-                kids_addr = fnd_all(pdf, bytes("/Parent {0} 0 R".format(tpon), "utf-8"))
+                kids_addr = fnd_all(pdf, bytes(
+                    "/Parent {0} 0 R".format(tpon), "utf-8"))
                 for kid in kids_addr:
                     ind = fnd_rvrs(pdf, b"obj", kid) - 4
                     addr = fnd_rvrs(pdf, b"\r", ind)
@@ -231,7 +234,8 @@ class CAJParser(object):
                             pdf.seek(cnt_addr + cnt_len)
                             [_str] = struct.unpack("1s", pdf.read(1))
                         pdf.seek(cnt_addr)
-                        [cnt] = struct.unpack(str(cnt_len) + "s", pdf.read(cnt_len))
+                        [cnt] = struct.unpack(
+                            str(cnt_len) + "s", pdf.read(cnt_len))
                         count_dict[tpon] += int(cnt)
                     else:  # _type == b"Page"
                         count_dict[tpon] += 1
@@ -246,10 +250,12 @@ class CAJParser(object):
 
         # Use mutool to repair xref
         try:
-            check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
+            check_output(["mutool", "clean", "pdf.tmp",
+                          "pdf_toc.pdf"], stderr=STDOUT)
         except CalledProcessError as e:
             print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            raise SystemExit(
+                "Command mutool returned non-zero exit status " + str(e.returncode))
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
