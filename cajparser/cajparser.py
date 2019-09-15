@@ -38,6 +38,7 @@ class CAJParser(object):
 
     @property
     def toc_num(self):
+        """目录条目的数目"""
         with open(self.filename, "rb") as caj:
             caj.seek(self._TOC_NUMBER_OFFSET)
             [toc_num] = struct.unpack("i", caj.read(4))
