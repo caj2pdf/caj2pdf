@@ -65,7 +65,7 @@ class CAJParser(object):
         返回值列表中的元素为字典::
 
             {
-                "title": bytes, # utf-8 编码
+                "title": str,
                 "page": int,
                 "level": int
             }
@@ -75,7 +75,7 @@ class CAJParser(object):
             for i in range(self.toc_num):
                 caj.seek(self._TOC_NUMBER_OFFSET + 4 + self.TOC_LENGTH * i)
                 toc_bytes = struct.unpack("256s24s12s12si", caj.read(self.TOC_LENGTH))
-                title = toc_bytes[0].strip(b"\x00").decode("gbk").encode("utf-8")
+                title = toc_bytes[0].strip(b"\x00").decode("gbk")
                 page = int(toc_bytes[2].strip(b"\x00"))
                 level = toc_bytes[4]
                 toc_entry = {"title": title, "page": page, "level": level}
@@ -89,7 +89,7 @@ class CAJParser(object):
             for toc in toc_items:
                 f.write("{indent}{title}    {page}\n".format(
                     indent="    " * (toc["level"] - 1),
-                    title=toc["title"].decode("utf-8"),
+                    title=toc["title"],
                     page=toc["page"]
                 ))
 
