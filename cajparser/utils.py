@@ -1,7 +1,8 @@
 import os
 import sys
+
 import PyPDF2.pdf as PDF
-from PyPDF2 import PdfFileWriter, PdfFileReader
+from PyPDF2 import PdfFileReader, PdfFileWriter
 
 
 class Node(object):

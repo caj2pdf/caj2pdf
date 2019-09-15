@@ -1,16 +1,22 @@
 import os
 import struct
 from shutil import copy
-from subprocess import check_output, STDOUT, CalledProcessError
-from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
+from subprocess import STDOUT, CalledProcessError, check_output
+
+from .utils import add_outlines, fnd, fnd_all, fnd_rvrs, fnd_unuse_no
 
 
 class CAJParser(object):
+
+    # 一条目录的存储长度，单位字节
+    TOC_LENGTH = 308
+
     def __init__(self, filename):
         self.filename = filename
         try:
             with open(filename, "rb") as caj:
-                fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb18030")
+                magic_number = caj.read(4).strip(b"\x00")
+                fmt = magic_number.decode("gbk")
             if fmt == "CAJ":
                 self.format = "CAJ"
                 self._PAGE_NUMBER_OFFSET = 0x10
@@ -36,32 +42,58 @@ class CAJParser(object):
 
     @property
     def toc_num(self):
+        """目录条目的数目"""
         with open(self.filename, "rb") as caj:
             caj.seek(self._TOC_NUMBER_OFFSET)
             [toc_num] = struct.unpack("i", caj.read(4))
             return toc_num
 
     def get_toc(self):
+        """获取 caj 文件的目录
+
+        .. code:: c
+
+            struct toc_item {
+                char title[256];    // 0
+                char ???[24];       // 1
+                char page[12];      // 2
+                char ???[12];       // 3
+                int level;          // 4
+            }
+
+        :rtype: list
+
+        返回值列表中的元素为字典::
+
+            {
+                "title": str,
+                "page": int,
+                "level": int
+            }
+        """
         toc = []
         with open(self.filename, "rb") as caj:
             for i in range(self.toc_num):
-                caj.seek(self._TOC_NUMBER_OFFSET + 4 + 0x134 * i)
-                toc_bytes = struct.unpack("256s24s12s12si", caj.read(0x134))
-                ttl_end = toc_bytes[0].find(b"\x00")
-                title = toc_bytes[0][0:ttl_end].decode("gb18030").encode("utf-8")
-                pg_end = toc_bytes[2].find(b"\x00")
-                page = int(toc_bytes[2][0:pg_end])
+                caj.seek(self._TOC_NUMBER_OFFSET + 4 + self.TOC_LENGTH * i)
+                toc_bytes = struct.unpack(
+                    "256s24s12s12si", caj.read(self.TOC_LENGTH))
+                title = toc_bytes[0].strip(b"\x00").decode("gbk")
+                page = int(toc_bytes[2].strip(b"\x00"))
                 level = toc_bytes[4]
                 toc_entry = {"title": title, "page": page, "level": level}
                 toc.append(toc_entry)
         return toc
 
-    def output_toc(self, dest):
+    def output_toc(self, dest: str):
+        """向 *dest* 所指的目标文件输出文档的目录"""
         toc_items = self.get_toc()
-        with open(dest, "wb") as f:
+        with open(dest, "wt", encoding="utf-8") as f:
             for toc in toc_items:
-                f.write(b'    ' * (toc["level"] - 1) + toc["title"]
-                        + b'    ' + str(toc["page"]).encode("utf-8") + b'\n')
+                f.write("{indent}{title}    {page}\n".format(
+                    indent="    " * (toc["level"] - 1),
+                    title=toc["title"],
+                    page=toc["page"]
+                ))
 
     def convert(self, dest):
         if self.format == "CAJ":
@@ -179,7 +211,8 @@ class CAJParser(object):
             kids_dict = {i: [] for i in top_pages_obj_no}
             count_dict = {i: 0 for i in top_pages_obj_no}
             for tpon in top_pages_obj_no:
-                kids_addr = fnd_all(pdf, bytes("/Parent {0} 0 R".format(tpon), "utf-8"))
+                kids_addr = fnd_all(pdf, bytes(
+                    "/Parent {0} 0 R".format(tpon), "utf-8"))
                 for kid in kids_addr:
                     ind = fnd_rvrs(pdf, b"obj", kid) - 4
                     addr = fnd_rvrs(pdf, b"\r", ind)
@@ -201,7 +234,8 @@ class CAJParser(object):
                             pdf.seek(cnt_addr + cnt_len)
                             [_str] = struct.unpack("1s", pdf.read(1))
                         pdf.seek(cnt_addr)
-                        [cnt] = struct.unpack(str(cnt_len) + "s", pdf.read(cnt_len))
+                        [cnt] = struct.unpack(
+                            str(cnt_len) + "s", pdf.read(cnt_len))
                         count_dict[tpon] += int(cnt)
                     else:  # _type == b"Page"
                         count_dict[tpon] += 1
@@ -216,10 +250,12 @@ class CAJParser(object):
 
         # Use mutool to repair xref
         try:
-            check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
+            check_output(["mutool", "clean", "pdf.tmp",
+                          "pdf_toc.pdf"], stderr=STDOUT)
         except CalledProcessError as e:
             print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            raise SystemExit(
+                "Command mutool returned non-zero exit status " + str(e.returncode))
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
