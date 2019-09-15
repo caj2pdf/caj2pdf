@@ -5,6 +5,7 @@ description = "Conver CAJ(China Academic Journals) file to PDF"
 authors = ["JeziL <wangjinlithu@gmail.com>",
             "Maybeka <Guxihanx@gmail.com>",
             "zombie110year <zombie110year@outlook.com>"]
+packages = ["cajparser"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -22,4 +23,3 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-

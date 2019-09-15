@@ -1,8 +1,9 @@
 import os
 import struct
 from shutil import copy
-from subprocess import check_output, STDOUT, CalledProcessError
-from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
+from subprocess import STDOUT, CalledProcessError, check_output
+
+from .utils import add_outlines, fnd, fnd_all, fnd_rvrs, fnd_unuse_no
 
 
 class CAJParser(object):
