@@ -4,6 +4,8 @@ from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
+KDH_PASSPHRASE = b"FZHMEI"
+
 
 class CAJParser(object):
     def __init__(self, filename):
@@ -21,6 +23,8 @@ class CAJParser(object):
                 self._TOC_NUMBER_OFFSET = 0x158
             elif fmt == "%PDF":
                 self.format = "PDF"
+            elif fmt == "KDH ":
+                self.format = "KDH"
             else:
                 self.format = None
                 raise SystemExit("Unknown file type.")
@@ -70,6 +74,8 @@ class CAJParser(object):
             self._convert_hn(dest)
         elif self.format == "PDF":
             self._convert_pdf(dest)
+        elif self.format == "KDH":
+            self._convert_kdh(dest)
 
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
@@ -232,3 +238,40 @@ class CAJParser(object):
 
     def _convert_pdf(self, dest):
         copy(self.filename, dest)
+
+    def _convert_kdh(self, dest):
+        #  Read KDH file.
+        fp = open(self.filename, "rb")
+        origin = fp.read()
+        fp.close()
+
+        #  Decrypt.
+        origin = origin[254:]
+        output = []
+        keycursor = 0
+        for origin_byte in origin:
+            output.append(origin_byte ^ KDH_PASSPHRASE[keycursor])
+            keycursor += 1
+            if keycursor >= len(KDH_PASSPHRASE):
+                keycursor = 0
+        output = bytes(output)
+
+        #  Remove useless tail data.
+        eofpos = output.rfind(b"%%EOF")
+        if eofpos < 0:
+            raise Exception("%%EOF mark can't be found.")
+        output = output[:eofpos + 5]
+
+        #  Write output file.
+        fp = open(dest + ".tmp", "wb")
+        fp.write(output)
+        fp.close()
+
+        # Use mutool to repair xref
+        try:
+            check_output(["mutool", "clean", dest + ".tmp", dest], stderr=STDOUT)
+        except CalledProcessError as e:
+            print(e.output.decode("utf-8"))
+            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+
+        os.remove(dest + ".tmp")

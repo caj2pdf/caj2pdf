@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     if args.command == "show":
         caj = CAJParser(args.input)
-        if caj.format == "PDF":
+        if caj.format == "PDF" or caj.format == "KDH":
             print("File: {0}\nType: {1}\n".format(args.input, caj.format))
         else:
             print("File: {0}\nType: {1}\nPage count: {2}\nOutlines count: {3}\n".format(
@@ -42,8 +42,8 @@ if __name__ == "__main__":
 
     if args.command == "outlines":
         caj = CAJParser(args.input)
-        if caj.format == "PDF":
-            raise SystemExit("Unsupported file type: PDF.")
+        if caj.format == "PDF" or caj.format == "KDH":
+            raise SystemExit("Unsupported file type: {0}.".format(caj.format))
         toc = caj.get_toc()
         add_outlines(toc, args.output, "tmp.pdf")
         os.replace("tmp.pdf", args.output)
