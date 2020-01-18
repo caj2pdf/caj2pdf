@@ -254,9 +254,24 @@ class CAJParser(object):
             keycursor += 1
             if keycursor >= len(KDH_PASSPHRASE):
                 keycursor = 0
+        output = bytes(output)
+
+        #  Remove useless tail data.
+        eofpos = output.rfind(b"%%EOF")
+        if eofpos < 0:
+            raise Exception("%%EOF mark can't be found.")
+        output = output[:eofpos + 5]
 
         #  Write output file.
-        fp = open(dest, "wb")
-        fp.write(bytes(output))
+        fp = open(dest + ".tmp", "wb")
+        fp.write(output)
         fp.close()
 
+        # Use mutool to repair xref
+        try:
+            check_output(["mutool", "clean", dest + ".tmp", dest], stderr=STDOUT)
+        except CalledProcessError as e:
+            print(e.output.decode("utf-8"))
+            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+
+        os.remove(dest + ".tmp")
