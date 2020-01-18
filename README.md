@@ -54,6 +54,13 @@ caj2pdf outlines test.caj -o printed.pdf
 
 - `Unknown file type.`：未知文件类型；
 - `Unsupported file type.`： 尚不支持的 HN 格式。
+## GUI
+基于tkinter库，粗略试了一下勉强能用。
+caj浏览目录默认是C盘，pdf浏览目录默认是程序目录，也可以在输入框里填写。
+caj转pdf默认是输出到**caj目录**下。
+pdf加目录默认是输出到**pdf目录**下。
+没有对转换程序进行改动，所以如果出现**卡死**的情况，多半是转换不了。
+没有怎么测试，能不能运行都是随缘。
 
 ## License
 
