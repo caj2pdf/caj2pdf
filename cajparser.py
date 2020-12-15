@@ -301,6 +301,10 @@ class CAJParser(object):
                 raise SystemExit("unusual image offset")
             print("Page Image Header dump:\n", self.dump(read32), sep="")
             print("Expected End of Page #%d: 0x%08X" % (i+1, page_data_offset + size_of_text_section + size_of_image_data + 12))
+            caj.seek(offset_to_image_data)
+            image_data = caj.read(size_of_image_data)
+            with open("image_dump_%d.dat" % (i+1), "wb") as f:
+                f.write(image_data)
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
     def dump(self, src):
