@@ -289,7 +289,7 @@ class CAJParser(object):
                     print("Unexpected:", len(output), expanded_text_size)
                 for x in range(len(output) >> 4):
                     try:
-                        print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gb2312"), end="")
+                        print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gbk"), end="")
                     except UnicodeDecodeError:
                         print(self.dump(output[x << 4:(x+1) << 4]))
                 print()
