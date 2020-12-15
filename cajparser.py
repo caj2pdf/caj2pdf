@@ -287,6 +287,12 @@ class CAJParser(object):
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     print("Unexpected:", len(output), expanded_text_size)
+                for x in range(len(output) >> 4):
+                    try:
+                        print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gb2312"), end="")
+                    except UnicodeDecodeError:
+                        print(self.dump(output[x << 4:(x+1) << 4]))
+                print()
             caj.seek(page_data_offset + size_of_text_section)
             read32 = caj.read(32)
             [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
