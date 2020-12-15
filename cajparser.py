@@ -9,7 +9,7 @@ KDH_PASSPHRASE = b"FZHMEI"
 printables = ''.join([(len(repr(chr(x)))==3) and (x != 47) and (x < 128) and chr(x) or '.' for x in range(256)])
 
 image_type = {
-    0 : "JBIG?",
+    0 : "DIB",
     2 : "JPEG"
     }
 
