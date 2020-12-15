@@ -20,6 +20,9 @@ if __name__ == "__main__":
     outlines_parser.add_argument("input", help="Path to the CAJ file.")
     outlines_parser.add_argument("-o", "--output", help="Path to the PDF file.", required=True)
 
+    show_parser = subparsers.add_parser("parse", help="Parse CAJ file for debugging/development")
+    show_parser.add_argument("input", help="Path to the CAJ file.")
+
     args = parser.parse_args()
 
     if args.command == "show":
@@ -47,3 +50,7 @@ if __name__ == "__main__":
         toc = caj.get_toc()
         add_outlines(toc, args.output, "tmp.pdf")
         os.replace("tmp.pdf", args.output)
+
+    if args.command == "parse":
+        caj = CAJParser(args.input)
+        caj.parse()
