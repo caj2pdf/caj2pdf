@@ -305,6 +305,9 @@ class CAJParser(object):
             image_data = caj.read(size_of_image_data)
             with open("image_dump_%04d.dat" % (i+1), "wb") as f:
                 f.write(image_data)
+            if (image_type[image_type_enum] == "DIB"):
+                from jbigdec import SaveJbigAsBmp
+                SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d.bmp" % (i+1)).encode('ascii'))
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
     def dump(self, src):
