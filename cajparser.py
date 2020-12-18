@@ -6,6 +6,12 @@ from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
 KDH_PASSPHRASE = b"FZHMEI"
 
+printables = ''.join([(len(repr(chr(x)))==3) and (x != 47) and (x < 128) and chr(x) or '.' for x in range(256)])
+
+image_type = {
+    0 : "DIB",
+    2 : "JPEG"
+    }
 
 class CAJParser(object):
     def __init__(self, filename):
@@ -21,6 +27,11 @@ class CAJParser(object):
                 self.format = "HN"
                 self._PAGE_NUMBER_OFFSET = 0x90
                 self._TOC_NUMBER_OFFSET = 0x158
+
+                # TOC = [toc_num] followed by [toc_entry * toc_num]
+                # followed by [Page Info struct (20-byte) * page_num], followed by Page Data
+                self._TOC_END_OFFSET = self._TOC_NUMBER_OFFSET + 4 + 0x134 * self.toc_num
+                self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + 20 * self.page_num
             elif fmt == "%PDF":
                 self.format = "PDF"
             elif fmt == "KDH ":
@@ -45,7 +56,7 @@ class CAJParser(object):
             [toc_num] = struct.unpack("i", caj.read(4))
             return toc_num
 
-    def get_toc(self):
+    def get_toc(self, verbose=False):
         toc = []
         with open(self.filename, "rb") as caj:
             for i in range(self.toc_num):
@@ -57,7 +68,11 @@ class CAJParser(object):
                 page = int(toc_bytes[2][0:pg_end])
                 level = toc_bytes[4]
                 toc_entry = {"title": title, "page": page, "level": level}
+                if ( verbose ):
+                    print("   " * (level -1), title.decode("utf-8"))
                 toc.append(toc_entry)
+            if ( verbose ):
+                print("TOC END: 0x%04X" % (self._TOC_NUMBER_OFFSET + 4 + 0x134 * self.toc_num))
         return toc
 
     def output_toc(self, dest):
@@ -76,6 +91,16 @@ class CAJParser(object):
             self._convert_pdf(dest)
         elif self.format == "KDH":
             self._convert_kdh(dest)
+
+    def parse(self):
+        if self.format == "CAJ":
+            pass
+        elif self.format == "HN":
+            self._parse_hn()
+        elif self.format == "PDF":
+            pass
+        elif self.format == "KDH":
+            pass
 
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
@@ -235,6 +260,64 @@ class CAJParser(object):
 
     def _convert_hn(self, dest):
         raise SystemExit("Unsupported file type.")
+
+    def _parse_hn(self):
+        self.get_toc(verbose=True)
+        caj = open(self.filename, "rb")
+
+        for i in range(self.page_num):
+            caj.seek(self._TOC_END_OFFSET + i * 20)
+            print("Reading Page Info struct #%d at offset 0x%04X" % (i+1, self._TOC_END_OFFSET + i * 20))
+            [page_data_offset, size_of_text_section, unk1, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            print("unknown page struct members = (%d %d %d)" % (unk1, unk2, unk3))
+            # All 71: 1,0,0
+            print("Page Number %d Data offset = 0x%04X" % (page_no, page_data_offset))
+            caj.seek(page_data_offset)
+            text_header_read32 = caj.read(32)
+            print("Page Text Header dump:\n", self.dump(text_header_read32), sep="")
+            # The first 8 bytes are always: 03 80 XX 16 03 80 XX XX,
+            # the last one 20 or 21, but the first two can be any.
+            # 48/71 has: 03 80 E0 16 03 80 F7 20, the rest uniq
+            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+                # expanded_text_size seems to be always about 2-3 times size_of_text_section, so this is a guess.
+                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                import zlib
+                caj.seek(page_data_offset + 24)
+                data = caj.read(size_of_text_section - 24)
+                output = zlib.decompress(data, bufsize=expanded_text_size)
+                if (len(output) != expanded_text_size):
+                    print("Unexpected:", len(output), expanded_text_size)
+                for x in range(len(output) >> 4):
+                    try:
+                        print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gbk"), end="")
+                    except UnicodeDecodeError:
+                        print(self.dump(output[x << 4:(x+1) << 4]))
+                print()
+            caj.seek(page_data_offset + size_of_text_section)
+            read32 = caj.read(32)
+            [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+            print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
+            if (offset_to_image_data != page_data_offset + size_of_text_section + 12):
+                raise SystemExit("unusual image offset")
+            print("Page Image Header dump:\n", self.dump(read32), sep="")
+            print("Expected End of Page #%d: 0x%08X" % (i+1, page_data_offset + size_of_text_section + size_of_image_data + 12))
+            caj.seek(offset_to_image_data)
+            image_data = caj.read(size_of_image_data)
+            with open("image_dump_%04d.dat" % (i+1), "wb") as f:
+                f.write(image_data)
+        print("end 0x%08x" % self._PAGEDATA_OFFSET)
+
+    def dump(self, src):
+        N=0
+        result=[]
+        while src:
+            s,src = src[:16],src[16:]
+            hexa = ' '.join(["%02X"% x for x in s])
+            s = ''.join(printables[x] for x in s)
+            result += "%04X   %-*s   %s\n" % (N, 16*3, hexa, s)
+            N+=16
+        return ''.join(result)
+
 
     def _convert_pdf(self, dest):
         copy(self.filename, dest)
