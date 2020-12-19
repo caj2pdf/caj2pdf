@@ -9,8 +9,10 @@ KDH_PASSPHRASE = b"FZHMEI"
 printables = ''.join([(len(repr(chr(x)))==3) and (x != 47) and (x < 128) and chr(x) or '.' for x in range(256)])
 
 image_type = {
-    0 : "DIB",
-    2 : "JPEG"
+    0 : "JBIG",
+    1 : "JPEG",
+    2 : "JPEG", # up-side-down
+    3 : "JBIG2"
     }
 
 class CAJParser(object):
@@ -296,6 +298,8 @@ class CAJParser(object):
             caj.seek(page_data_offset + size_of_text_section)
             read32 = caj.read(32)
             [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+            if (image_type[image_type_enum] != "JPEG"):
+                read32 += caj.read(64)
             print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
             if (offset_to_image_data != page_data_offset + size_of_text_section + 12):
                 raise SystemExit("unusual image offset")
