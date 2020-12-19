@@ -22,6 +22,10 @@ SaveJbigAsBmp = libjbigdec.SaveJbigAsBmp
 SaveJbigAsBmp.restype = None
 SaveJbigAsBmp.argtypes = [c_void_p, c_int, c_char_p]
 
+SaveJbig2AsBmp = libjbigdec.SaveJbig2AsBmp
+SaveJbig2AsBmp.restype = None
+SaveJbig2AsBmp.argtypes = [c_void_p, c_int, c_char_p]
+
 if __name__ == '__main__':
     import sys, os
 

@@ -312,6 +312,9 @@ class CAJParser(object):
             if (image_type[image_type_enum] == "DIB"):
                 from jbigdec import SaveJbigAsBmp
                 SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d.bmp" % (i+1)).encode('ascii'))
+            elif (image_type[image_type_enum] == "JBIG2"):
+                from jbigdec import SaveJbig2AsBmp
+                SaveJbig2AsBmp(image_data, size_of_image_data, ("image_dump_%04d.bmp" % (i+1)).encode('ascii'))
             elif (image_type[image_type_enum] == "JPEG"):
                 with open("image_dump_%04d.jpg" % (i+1), "wb") as f:
                     f.write(image_data)
