@@ -20,7 +20,16 @@ class CAJParser(object):
         self.filename = filename
         try:
             with open(filename, "rb") as caj:
-                fmt = struct.unpack("4s", caj.read(4))[0].replace(b'\x00', b'').decode("gb18030")
+                caj_read4 = caj.read(4)
+                print(caj_read4[0:1])
+                if (caj_read4[0:1] == b'\xc8'):
+                    self.format = "C8"
+                    self._PAGE_NUMBER_OFFSET = 0x08
+                    self._TOC_NUMBER_OFFSET = 0 # No TOC
+                    self._TOC_END_OFFSET = 0x50
+                    self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + 20 * self.page_num
+                    return
+                fmt = struct.unpack("4s", caj_read4)[0].replace(b'\x00', b'').decode("gb18030")
             if fmt == "CAJ":
                 self.format = "CAJ"
                 self._PAGE_NUMBER_OFFSET = 0x10
@@ -98,6 +107,8 @@ class CAJParser(object):
         if self.format == "CAJ":
             pass
         elif self.format == "HN":
+            self._parse_hn()
+        elif self.format == "C8":
             self._parse_hn()
         elif self.format == "PDF":
             pass
@@ -264,7 +275,8 @@ class CAJParser(object):
         raise SystemExit("Unsupported file type.")
 
     def _parse_hn(self):
-        self.get_toc(verbose=True)
+        if (self._TOC_NUMBER_OFFSET > 0):
+            self.get_toc(verbose=True)
         caj = open(self.filename, "rb")
 
         for i in range(self.page_num):
