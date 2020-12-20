@@ -315,16 +315,19 @@ class CAJParser(object):
                 caj.seek(offset_to_image_data)
                 image_data = caj.read(size_of_image_data)
                 current_offset = offset_to_image_data + size_of_image_data
-                with open("image_dump_%04d_%04d.dat" % (i+1, j+1), "wb") as f:
+                image_name = "image_dump_%04d" % (i+1)
+                if (j > 0):
+                    image_name = "image_dump_%04d_%04d" % (i+1, j)
+                with open(image_name + ".dat", "wb") as f:
                     f.write(image_data)
                 if (image_type[image_type_enum] == "JBIG"):
                     from jbigdec import SaveJbigAsBmp
-                    SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                    SaveJbigAsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
                 elif (image_type[image_type_enum] == "JBIG2"):
                     from jbigdec import SaveJbig2AsBmp
-                    SaveJbig2AsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                    SaveJbig2AsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
                 elif (image_type[image_type_enum] == "JPEG"):
-                    with open("image_dump_%04d_%04d.jpg" % (i+1, j+1), "wb") as f:
+                    with open(image_name + ".jpg", "wb") as f:
                         f.write(image_data)
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
