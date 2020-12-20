@@ -12,6 +12,10 @@
 
       cc -o jbigdec -Wl,-rpath,. -Wall jbigdec.cc -L. -lreaderex_x64
 
+  For the python module, also:
+
+      cc -fPIC --shared -o libjbigdec.so -Wl,-rpath,. -Wall jbigdec.cc -L. -lreaderex_x64
+
   and to generate the "image_dump_*.dat":
 
       ./caj2pdf parse thesis.caj
@@ -38,8 +42,22 @@ extern "C" {
   class CImage {
   public:
     static CImage* DecodeJbig(void*, unsigned int, unsigned int*);
+    static CImage* DecodeJbig2(void*, unsigned int, unsigned int*);
     int SaveAsBmp(char const*);
   };
+
+void SaveJbigAsBmp(void* in, unsigned int len, char const* outfile)
+{
+  CImage* x = CImage::DecodeJbig(in, len, NULL);
+  x->SaveAsBmp(outfile);
+}
+
+void SaveJbig2AsBmp(void* in, unsigned int len, char const* outfile)
+{
+  CImage* x = CImage::DecodeJbig2(in, len, NULL);
+  x->SaveAsBmp(outfile);
+}
+
 }
 
 int main(int argc, char *argv[])

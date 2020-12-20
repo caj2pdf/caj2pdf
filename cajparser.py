@@ -9,8 +9,10 @@ KDH_PASSPHRASE = b"FZHMEI"
 printables = ''.join([(len(repr(chr(x)))==3) and (x != 47) and (x < 128) and chr(x) or '.' for x in range(256)])
 
 image_type = {
-    0 : "DIB",
-    2 : "JPEG"
+    0 : "JBIG",
+    1 : "JPEG",
+    2 : "JPEG", # up-side-down
+    3 : "JBIG2"
     }
 
 class CAJParser(object):
@@ -268,8 +270,8 @@ class CAJParser(object):
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
             print("Reading Page Info struct #%d at offset 0x%04X" % (i+1, self._TOC_END_OFFSET + i * 20))
-            [page_data_offset, size_of_text_section, unk1, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
-            print("unknown page struct members = (%d %d %d)" % (unk1, unk2, unk3))
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            print("unknown page struct members = (%d %d)" % (unk2, unk3))
             # All 71: 1,0,0
             print("Page Number %d Data offset = 0x%04X" % (page_no, page_data_offset))
             caj.seek(page_data_offset)
@@ -287,34 +289,64 @@ class CAJParser(object):
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     print("Unexpected:", len(output), expanded_text_size)
+                print("Page Text Header COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
                 for x in range(len(output) >> 4):
                     try:
                         print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gbk"), end="")
                     except UnicodeDecodeError:
                         print(self.dump(output[x << 4:(x+1) << 4]))
                 print()
-            caj.seek(page_data_offset + size_of_text_section)
-            read32 = caj.read(32)
-            [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
-            print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
-            if (offset_to_image_data != page_data_offset + size_of_text_section + 12):
-                raise SystemExit("unusual image offset")
-            print("Page Image Header dump:\n", self.dump(read32), sep="")
-            print("Expected End of Page #%d: 0x%08X" % (i+1, page_data_offset + size_of_text_section + size_of_image_data + 12))
-            caj.seek(offset_to_image_data)
-            image_data = caj.read(size_of_image_data)
-            with open("image_dump_%04d.dat" % (i+1), "wb") as f:
-                f.write(image_data)
+            else:
+                caj.seek(page_data_offset)
+                output = caj.read(size_of_text_section)
+                print("Page Text Header non-COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
+            current_offset = page_data_offset + size_of_text_section
+            for j in range(images_per_page):
+                caj.seek(current_offset)
+                read32 = caj.read(32)
+                [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+                if (image_type[image_type_enum] != "JPEG"):
+                    read32 += caj.read(64)
+                print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
+                if (offset_to_image_data != current_offset + 12):
+                    raise SystemExit("unusual image offset")
+                print("Page Image Header dump:\n", self.dump(read32), sep="")
+                print("Expected End of Page #%d: 0x%08X" % (i+1, current_offset + size_of_image_data + 12))
+                caj.seek(offset_to_image_data)
+                image_data = caj.read(size_of_image_data)
+                current_offset = offset_to_image_data + size_of_image_data
+                with open("image_dump_%04d_%04d.dat" % (i+1, j+1), "wb") as f:
+                    f.write(image_data)
+                if (image_type[image_type_enum] == "JBIG"):
+                    from jbigdec import SaveJbigAsBmp
+                    SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                elif (image_type[image_type_enum] == "JBIG2"):
+                    from jbigdec import SaveJbig2AsBmp
+                    SaveJbig2AsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                elif (image_type[image_type_enum] == "JPEG"):
+                    with open("image_dump_%04d_%04d.jpg" % (i+1, j+1), "wb") as f:
+                        f.write(image_data)
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
-    def dump(self, src):
+    def dump(self, src, GB=False):
         N=0
         result=[]
         while src:
             s,src = src[:16],src[16:]
             hexa = ' '.join(["%02X"% x for x in s])
+            gb = ""
+            if (GB):
+                gb += "    "
+                for x in range(len(s) >> 1):
+                    try:
+                        if (s[(x << 1) +1] < 128 and s[(x << 1) + 0] < 128):
+                            gb += ".."
+                        else:
+                            gb += bytes([s[(x << 1) + 1],s[(x << 1) + 0]]).decode("gbk")
+                    except UnicodeDecodeError:
+                        gb += ".."
             s = ''.join(printables[x] for x in s)
-            result += "%04X   %-*s   %s\n" % (N, 16*3, hexa, s)
+            result += "%04X   %-*s   %s%s\n" % (N, 16*3, hexa, s, gb)
             N+=16
         return ''.join(result)
 
