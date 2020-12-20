@@ -289,6 +289,7 @@ class CAJParser(object):
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     print("Unexpected:", len(output), expanded_text_size)
+                print("Page Text Header COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
                 for x in range(len(output) >> 4):
                     try:
                         print(bytes([output[(x << 4) + 7],output[(x << 4) + 6]]).decode("gbk"), end="")
@@ -298,13 +299,7 @@ class CAJParser(object):
             else:
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
-                print("Page Text Header non-COMPRESSTEXT:\n", self.dump(output), sep="")
-                for x in range(len(output) >> 2):
-                    try:
-                        print(bytes([output[(x << 2) + 3],output[(x << 2) + 2]]).decode("gbk"), end="")
-                    except UnicodeDecodeError:
-                        print(self.dump(output[x << 2:(x+1) << 2]))
-                print()
+                print("Page Text Header non-COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
@@ -333,14 +328,25 @@ class CAJParser(object):
                         f.write(image_data)
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
-    def dump(self, src):
+    def dump(self, src, GB=False):
         N=0
         result=[]
         while src:
             s,src = src[:16],src[16:]
             hexa = ' '.join(["%02X"% x for x in s])
+            gb = ""
+            if (GB):
+                gb += "    "
+                for x in range(len(s) >> 1):
+                    try:
+                        if (s[(x << 1) +1] < 128 and s[(x << 1) + 0] < 128):
+                            gb += ".."
+                        else:
+                            gb += bytes([s[(x << 1) + 1],s[(x << 1) + 0]]).decode("gbk")
+                    except UnicodeDecodeError:
+                        gb += ".."
             s = ''.join(printables[x] for x in s)
-            result += "%04X   %-*s   %s\n" % (N, 16*3, hexa, s)
+            result += "%04X   %-*s   %s%s\n" % (N, 16*3, hexa, s, gb)
             N+=16
         return ''.join(result)
 
