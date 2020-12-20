@@ -270,8 +270,8 @@ class CAJParser(object):
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
             print("Reading Page Info struct #%d at offset 0x%04X" % (i+1, self._TOC_END_OFFSET + i * 20))
-            [page_data_offset, size_of_text_section, unk1, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
-            print("unknown page struct members = (%d %d %d)" % (unk1, unk2, unk3))
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            print("unknown page struct members = (%d %d)" % (unk2, unk3))
             # All 71: 1,0,0
             print("Page Number %d Data offset = 0x%04X" % (page_no, page_data_offset))
             caj.seek(page_data_offset)
@@ -305,29 +305,32 @@ class CAJParser(object):
                     except UnicodeDecodeError:
                         print(self.dump(output[x << 2:(x+1) << 2]))
                 print()
-            caj.seek(page_data_offset + size_of_text_section)
-            read32 = caj.read(32)
-            [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
-            if (image_type[image_type_enum] != "JPEG"):
-                read32 += caj.read(64)
-            print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
-            if (offset_to_image_data != page_data_offset + size_of_text_section + 12):
-                raise SystemExit("unusual image offset")
-            print("Page Image Header dump:\n", self.dump(read32), sep="")
-            print("Expected End of Page #%d: 0x%08X" % (i+1, page_data_offset + size_of_text_section + size_of_image_data + 12))
-            caj.seek(offset_to_image_data)
-            image_data = caj.read(size_of_image_data)
-            with open("image_dump_%04d.dat" % (i+1), "wb") as f:
-                f.write(image_data)
-            if (image_type[image_type_enum] == "JBIG"):
-                from jbigdec import SaveJbigAsBmp
-                SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d.bmp" % (i+1)).encode('ascii'))
-            elif (image_type[image_type_enum] == "JBIG2"):
-                from jbigdec import SaveJbig2AsBmp
-                SaveJbig2AsBmp(image_data, size_of_image_data, ("image_dump_%04d.bmp" % (i+1)).encode('ascii'))
-            elif (image_type[image_type_enum] == "JPEG"):
-                with open("image_dump_%04d.jpg" % (i+1), "wb") as f:
+            current_offset = page_data_offset + size_of_text_section
+            for j in range(images_per_page):
+                caj.seek(current_offset)
+                read32 = caj.read(32)
+                [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+                if (image_type[image_type_enum] != "JPEG"):
+                    read32 += caj.read(64)
+                print("size of image data = %d (%s)" % (size_of_image_data, image_type[image_type_enum]))
+                if (offset_to_image_data != current_offset + 12):
+                    raise SystemExit("unusual image offset")
+                print("Page Image Header dump:\n", self.dump(read32), sep="")
+                print("Expected End of Page #%d: 0x%08X" % (i+1, current_offset + size_of_image_data + 12))
+                caj.seek(offset_to_image_data)
+                image_data = caj.read(size_of_image_data)
+                current_offset = offset_to_image_data + size_of_image_data
+                with open("image_dump_%04d_%04d.dat" % (i+1, j+1), "wb") as f:
                     f.write(image_data)
+                if (image_type[image_type_enum] == "JBIG"):
+                    from jbigdec import SaveJbigAsBmp
+                    SaveJbigAsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                elif (image_type[image_type_enum] == "JBIG2"):
+                    from jbigdec import SaveJbig2AsBmp
+                    SaveJbig2AsBmp(image_data, size_of_image_data, ("image_dump_%04d_%04d.bmp" % (i+1, j+1)).encode('ascii'))
+                elif (image_type[image_type_enum] == "JPEG"):
+                    with open("image_dump_%04d_%04d.jpg" % (i+1, j+1), "wb") as f:
+                        f.write(image_data)
         print("end 0x%08x" % self._PAGEDATA_OFFSET)
 
     def dump(self, src):
