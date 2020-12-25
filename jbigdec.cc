@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
   // PBM is padded to 8 rather than 32.
   // If the padding is larger, write padded file.
   if (bytes_per_line > ((width +7) >> 3))
-    width = bytes_per_line >> 3;
+    width = bytes_per_line << 3;
   fprintf(fout, "%d %d\n", width, height);
   fwrite(out, 1, bytes_per_line * height, fout);
   fclose(fout); // "cmp -i 62:13 x.bmp x.pbm" shows nothing - identical.

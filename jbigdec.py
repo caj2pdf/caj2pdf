@@ -51,6 +51,11 @@ if __name__ == '__main__':
 
     jbigDecode(buffer[48:], buffer_size-48, height, width, bytes_per_line, out)
 
+    # PBM is only padded to 8 rather than 32.
+    # If the padding is larger, write padded file.
+    if (bytes_per_line > ((width +7) >> 3)):
+        width = bytes_per_line << 3
+
     fout = open(sys.argv[2].replace(".bmp", ".pbm"), "wb");
     fout.write("P4\n".encode("ascii"))
     fout.write(("%d %d\n" % (width, height)).encode("ascii"))
