@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
 
   JBigCodec *jbig = (JBigCodec *)calloc(0x8040, 1); // 0x8040 is linux 64-bit specific
   jbig->Decode(in+48, len-48, height, width, bytes_per_line, out);
+  free(jbig);
 
   FILE *fout = fopen("test.pbm", "wb");
   fprintf(fout, "P4\n");
