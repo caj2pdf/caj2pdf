@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
   int width  = in[4] | (in[5] << 8) | (in[6]  << 16) | (in[7]  << 24);
   int height = in[8] | (in[9] << 8) | (in[10] << 16) | (in[11] << 24);
   int bits_per_pixel = in[14] | (in[15] << 8);
+  // padding to multiple of 4 bytes.
   int bytes_per_line = ((width * bits_per_pixel + 31) >> 5) << 2;
 
   char *out = (char *)calloc(height * bytes_per_line, 1);
@@ -103,6 +104,10 @@ int main(int argc, char *argv[])
 
   FILE *fout = fopen("test.pbm", "wb");
   fprintf(fout, "P4\n");
+  // PBM is padded to 8 rather than 32.
+  // If the padding is larger, write padded file.
+  if (bytes_per_line > ((width +7) >> 3))
+    width = bytes_per_line >> 3;
   fprintf(fout, "%d %d\n", width, height);
   fwrite(out, 1, bytes_per_line * height, fout);
   fclose(fout); // "cmp -i 62:13 x.bmp x.pbm" shows nothing - identical.
