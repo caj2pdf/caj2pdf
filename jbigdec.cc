@@ -76,6 +76,14 @@ void SaveJbig2AsBmp(void* in, unsigned int len, char const* outfile)
   x->SaveAsBmp(outfile);
 }
 
+void jbigDecode(char* inbuf, unsigned int size, unsigned int height,
+                unsigned int bitwidth, unsigned int bitwidth_in_bytes /* rounded up to x4 */, char*outbuf)
+{
+  JBigCodec *jbig = (JBigCodec *)calloc(0x8040, 1); // 0x8040 is linux 64-bit specific
+  jbig->Decode(inbuf, size, height, bitwidth, bitwidth_in_bytes, outbuf);
+  free(jbig);
+}
+
 }
 
 int main(int argc, char *argv[])

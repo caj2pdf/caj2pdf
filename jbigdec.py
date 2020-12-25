@@ -26,6 +26,10 @@ SaveJbig2AsBmp = libjbigdec.SaveJbig2AsBmp
 SaveJbig2AsBmp.restype = None
 SaveJbig2AsBmp.argtypes = [c_void_p, c_int, c_char_p]
 
+jbigDecode = libjbigdec.jbigDecode
+jbigDecode.restype = None
+jbigDecode.argtypes = [c_void_p, c_int, c_int, c_int, c_int, c_void_p]
+
 if __name__ == '__main__':
     import sys, os
 
@@ -38,3 +42,17 @@ if __name__ == '__main__':
     buffer = f.read()
 
     SaveJbigAsBmp(buffer, buffer_size, sys.argv[2].encode("ascii"))
+
+    import struct
+    (width, height, num_planes, bits_per_pixel) = struct.unpack("<IIHH", buffer[4:16])
+    bytes_per_line = ((width * bits_per_pixel + 31) >> 5) << 2
+
+    out = create_string_buffer(height * bytes_per_line)
+
+    jbigDecode(buffer[48:], buffer_size-48, height, width, bytes_per_line, out)
+
+    fout = open(sys.argv[2].replace(".bmp", ".pbm"), "wb");
+    fout.write("P4\n".encode("ascii"))
+    fout.write(("%d %d\n" % (width, height)).encode("ascii"))
+    fout.write(out)
+    fout.close()
