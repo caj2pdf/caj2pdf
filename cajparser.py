@@ -21,7 +21,6 @@ class CAJParser(object):
         try:
             with open(filename, "rb") as caj:
                 caj_read4 = caj.read(4)
-                print(caj_read4[0:1])
                 if (caj_read4[0:1] == b'\xc8'):
                     self.format = "C8"
                     self._PAGE_NUMBER_OFFSET = 0x08
