@@ -66,7 +66,7 @@ if __name__ == '__main__':
     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
         width = cimage.bytes_per_line << 3
 
-    fout = open(sys.argv[2].replace(".bmp", ".pbm"), "wb");
+    fout = open(sys.argv[2].replace(".bmp", ".pbm"), "wb")
     fout.write("P4\n".encode("ascii"))
     fout.write(("%d %d\n" % (width, cimage.height)).encode("ascii"))
     fout.write(out)
