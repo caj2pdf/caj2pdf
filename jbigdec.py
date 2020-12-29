@@ -15,6 +15,7 @@
 
 from ctypes import *
 import os
+import struct
 
 libjbigdec = cdll.LoadLibrary("./libjbigdec.so")
 
@@ -30,6 +31,19 @@ jbigDecode = libjbigdec.jbigDecode
 jbigDecode.restype = None
 jbigDecode.argtypes = [c_void_p, c_int, c_int, c_int, c_int, c_void_p]
 
+class CImage:
+    def __init__(self, buffer):
+        self.buffer = buffer
+        self.buffer_size=len(buffer)
+        (self.width, self.height,
+         self.num_planes, self.bits_per_pixel) = struct.unpack("<IIHH", buffer[4:16])
+        self.bytes_per_line = ((self.width * self.bits_per_pixel + 31) >> 5) << 2
+
+    def DecodeJbig(self):
+        out = create_string_buffer(self.height * self.bytes_per_line)
+        jbigDecode(self.buffer[48:], self.buffer_size-48, self.height, self.width, self.bytes_per_line, out)
+        return out
+
 if __name__ == '__main__':
     import sys, os
 
@@ -43,21 +57,17 @@ if __name__ == '__main__':
 
     SaveJbigAsBmp(buffer, buffer_size, sys.argv[2].encode("ascii"))
 
-    import struct
-    (width, height, num_planes, bits_per_pixel) = struct.unpack("<IIHH", buffer[4:16])
-    bytes_per_line = ((width * bits_per_pixel + 31) >> 5) << 2
-
-    out = create_string_buffer(height * bytes_per_line)
-
-    jbigDecode(buffer[48:], buffer_size-48, height, width, bytes_per_line, out)
+    cimage = CImage(buffer)
+    out = cimage.DecodeJbig()
 
     # PBM is only padded to 8 rather than 32.
     # If the padding is larger, write padded file.
-    if (bytes_per_line > ((width +7) >> 3)):
-        width = bytes_per_line << 3
+    width = cimage.width
+    if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
+        width = cimage.bytes_per_line << 3
 
     fout = open(sys.argv[2].replace(".bmp", ".pbm"), "wb");
     fout.write("P4\n".encode("ascii"))
-    fout.write(("%d %d\n" % (width, height)).encode("ascii"))
+    fout.write(("%d %d\n" % (width, cimage.height)).encode("ascii"))
     fout.write(out)
     fout.close()
