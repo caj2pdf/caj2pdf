@@ -21,12 +21,11 @@ import sys
 import os
 import zlib
 import argparse
-from PIL import Image, TiffImagePlugin
+from PIL import Image
 
 # TiffImagePlugin.DEBUG = True
-from PIL.ExifTags import TAGS
 from datetime import datetime
-from jp2 import parsejp2
+#from jp2 import parsejp2
 from enum import Enum
 from io import BytesIO
 import logging
@@ -630,7 +629,7 @@ class pdfdoc(object):
         fit_window=False,
         center_window=False,
         fullscreen=False,
-        with_pdfrw=True,
+        with_pdfrw=False,
     ):
         if with_pdfrw:
             try:
@@ -1811,7 +1810,7 @@ def convert(*images, **kwargs):
         viewer_fit_window=False,
         viewer_center_window=False,
         viewer_fullscreen=False,
-        with_pdfrw=True,
+        with_pdfrw=False,
         outputstream=None,
         first_frame_only=False,
         allow_oversized=True,
@@ -2944,7 +2943,7 @@ and left/right, respectively. It is not possible to specify asymmetric borders.
             viewer_fit_window=args.viewer_fit_window,
             viewer_center_window=args.viewer_center_window,
             viewer_fullscreen=args.viewer_fullscreen,
-            with_pdfrw=not args.without_pdfrw,
+            with_pdfrw=False,
             outputstream=args.output,
             first_frame_only=args.first_frame_only,
             cropborder=args.crop_border,
