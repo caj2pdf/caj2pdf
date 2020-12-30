@@ -36,7 +36,7 @@ import platform
 PY3 = sys.version_info[0] >= 3
 
 __version__ = "0.3.4"
-default_dpi = 96.0
+default_dpi = 300.0
 papersizes = {
     "letter": "8.5inx11in",
     "a0": "841mmx1189mm",
@@ -807,7 +807,7 @@ class pdfdoc(object):
 
         text = (
             "q\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im0 Do\nQ"
-            % (imgwidthpdf, imgheightpdf, imgxpdf, imgypdf)
+            % (imgwidthpdf, -imgheightpdf, imgxpdf, imgypdf)
         ).encode("ascii")
 
         content = PdfDict(stream=convert_load(text))
@@ -1911,7 +1911,7 @@ def convert(*images, **kwargs):
                     )
             # the image is always centered on the page
             imgxpdf = (pagewidth - imgwidthpdf) / 2.0
-            imgypdf = (pageheight - imgheightpdf) / 2.0
+            imgypdf = (pageheight + imgheightpdf) / 2.0
             pdf.add_imagepage(
                 color,
                 imgwidthpx,
