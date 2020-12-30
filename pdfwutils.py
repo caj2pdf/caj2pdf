@@ -69,7 +69,7 @@ PageOrientation = Enum("PageOrientation", "portrait landscape")
 
 Colorspace = Enum("Colorspace", "RGB L 1 CMYK CMYK;I RGBA P other")
 
-ImageFormat = Enum("ImageFormat", "JPEG JPEG2000 CCITTGroup4 PNG TIFF other")
+ImageFormat = Enum("ImageFormat", "JPEG JPEG2000 CCITTGroup4 PNG TIFF PBM other")
 
 PageMode = Enum("PageMode", "none outlines thumbs")
 
@@ -794,6 +794,13 @@ class pdfdoc(object):
             decodeparms[PdfName.Columns] = imgwidthpx
             decodeparms[PdfName.Rows] = imgheightpx
             image[PdfName.DecodeParms] = [decodeparms]
+        elif imgformat is ImageFormat.PBM:
+            decodeparms = PdfDict()
+            decodeparms[PdfName.Predictor] = 1
+            decodeparms[PdfName.Colors] = 1
+            decodeparms[PdfName.Columns] = imgwidthpx
+            decodeparms[PdfName.BitsPerComponent] = depth
+            image[PdfName.DecodeParms] = decodeparms
         elif imgformat is ImageFormat.PNG:
             decodeparms = PdfDict()
             decodeparms[PdfName.Predictor] = 15
@@ -1402,30 +1409,26 @@ def read_images(rawdata, colorspace, first_frame_only=False):
 
         newimg = None
         if color == Colorspace["1"]:
-            try:
-                ccittdata = transcode_monochrome(imgdata)
-                logging.debug("read_images() encoded a B/W image as CCITT group 4")
-                result.append(
-                    (
-                        color,
-                        ndpi,
-                        ImageFormat.CCITTGroup4,
-                        ccittdata,
-                        imgwidthpx,
-                        imgheightpx,
-                        [],
-                        False,
-                        1,
-                        rotation,
-                    )
+            if (rawdata[0:2] == b"P4"):
+                zdata = zlib.compress(rawdata[13:])
+            else:
+                zdata = zlib.compress(rawdata)
+            result.append(
+                (
+                    Colorspace.P,
+                    ndpi,
+                    ImageFormat.PBM,
+                    zdata,
+                    imgwidthpx,
+                    imgheightpx,
+                    [0xffffff, 0],
+                    False,
+                    1,
+                    rotation,
                 )
-                img_page_count += 1
-                continue
-            except Exception as e:
-                logging.debug(e)
-                logging.debug("Converting colorspace 1 to L")
-                newimg = imgdata.convert("L")
-                color = Colorspace.L
+            )
+            img_page_count += 1
+            continue
         elif color in [
             Colorspace.RGB,
             Colorspace.L,
@@ -1941,6 +1944,134 @@ def convert(*images, **kwargs):
 
     return pdf.tostring()
 
+def convert_ImageList(*images, **kwargs):
+
+    _default_kwargs = dict(
+        title=None,
+        author=None,
+        creator=None,
+        producer=None,
+        creationdate=None,
+        moddate=None,
+        subject=None,
+        keywords=None,
+        colorspace=None,
+        nodate=False,
+        layout_fun=default_layout_fun,
+        viewer_panes=None,
+        viewer_initial_page=None,
+        viewer_magnification=None,
+        viewer_page_layout=None,
+        viewer_fit_window=False,
+        viewer_center_window=False,
+        viewer_fullscreen=False,
+        with_pdfrw=False,
+        outputstream=None,
+        first_frame_only=False,
+        allow_oversized=True,
+        cropborder=None,
+        bleedborder=None,
+        trimborder=None,
+        artborder=None,
+    )
+    for kwname, default in _default_kwargs.items():
+        if kwname not in kwargs:
+            kwargs[kwname] = default
+
+    pdf = pdfdoc(
+        "1.3",
+        kwargs["title"],
+        kwargs["author"],
+        kwargs["creator"],
+        kwargs["producer"],
+        kwargs["creationdate"],
+        kwargs["moddate"],
+        kwargs["subject"],
+        kwargs["keywords"],
+        kwargs["nodate"],
+        kwargs["viewer_panes"],
+        kwargs["viewer_initial_page"],
+        kwargs["viewer_magnification"],
+        kwargs["viewer_page_layout"],
+        kwargs["viewer_fit_window"],
+        kwargs["viewer_center_window"],
+        kwargs["viewer_fullscreen"],
+        kwargs["with_pdfrw"],
+    )
+
+    # backwards compatibility with older img2pdf versions where the first
+    # argument to the function had to be given as a list
+    if len(images) == 1:
+        # if only one argument was given and it is a list, expand it
+        if isinstance(images[0], (list, tuple)):
+            images = images[0]
+
+    if not isinstance(images, (list, tuple)):
+        images = [images]
+
+    for (
+        color,
+        ndpi,
+        imgformat,
+        imgdata,
+        imgwidthpx,
+        imgheightpx,
+        palette,
+        inverted,
+        depth,
+        rotation,
+    ) in images:
+        pagewidth, pageheight, imgwidthpdf, imgheightpdf = kwargs["layout_fun"](
+            imgwidthpx, imgheightpx, ndpi
+        )
+
+        userunit = None
+        if pagewidth < 3.00 or pageheight < 3.00:
+            logging.warning(
+                "pdf width or height is below 3.00 - too small for some viewers!"
+            )
+        elif pagewidth > 14400.0 or pageheight > 14400.0:
+            if kwargs["allow_oversized"]:
+                userunit = find_scale(pagewidth, pageheight)
+                pagewidth /= userunit
+                pageheight /= userunit
+                imgwidthpdf /= userunit
+                imgheightpdf /= userunit
+            else:
+                raise PdfTooLargeError(
+                    "pdf width or height must not exceed 200 inches."
+                )
+        # the image is always centered on the page
+        imgxpdf = (pagewidth - imgwidthpdf) / 2.0
+        imgypdf = (pageheight + imgheightpdf) / 2.0
+        pdf.add_imagepage(
+            color,
+            imgwidthpx,
+            imgheightpx,
+            imgformat,
+            imgdata,
+            imgwidthpdf,
+            imgheightpdf,
+            imgxpdf,
+            imgypdf,
+            pagewidth,
+            pageheight,
+            userunit,
+            palette,
+            inverted,
+            depth,
+            rotation,
+            kwargs["cropborder"],
+            kwargs["bleedborder"],
+            kwargs["trimborder"],
+            kwargs["artborder"],
+        )
+
+    if kwargs["outputstream"]:
+        pdf.tostream(kwargs["outputstream"])
+        return
+
+    return pdf.tostring()
 
 def parse_num(num, name):
     if num == "":

@@ -97,6 +97,8 @@ class CAJParser(object):
             self._convert_caj(dest)
         elif self.format == "HN":
             self._convert_hn(dest)
+        elif self.format == "C8":
+            self._convert_hn(dest)
         elif self.format == "PDF":
             self._convert_pdf(dest)
         elif self.format == "KDH":
@@ -271,7 +273,76 @@ class CAJParser(object):
         os.remove("pdf_toc.pdf")
 
     def _convert_hn(self, dest):
-        raise SystemExit("Unsupported file type.")
+        caj = open(self.filename, "rb")
+        image_list = []
+
+        from pdfwutils import Colorspace, ImageFormat, convert_ImageList
+        import zlib
+
+        for i in range(self.page_num):
+            caj.seek(self._TOC_END_OFFSET + i * 20)
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            current_offset = page_data_offset + size_of_text_section
+            for j in range(images_per_page):
+                caj.seek(current_offset)
+                read32 = caj.read(32)
+                [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+                if (offset_to_image_data != current_offset + 12):
+                    raise SystemExit("unusual image offset")
+                caj.seek(offset_to_image_data)
+                image_data = caj.read(size_of_image_data)
+                current_offset = offset_to_image_data + size_of_image_data
+                image_name = "image_dump_%04d" % (i+1)
+                if (j > 0):
+                    image_name = "image_dump_%04d_%04d" % (i+1, j)
+                    print("TODO: Multiple Images at Page %04d_%04d" % (i+1, j))
+                if (image_type[image_type_enum] == "JBIG"):
+                    from jbigdec import CImage
+                    cimage = CImage(image_data)
+                    out = cimage.DecodeJbig()
+                    # PBM is only padded to 8 rather than 32.
+                    # If the padding is larger, write padded file.
+                    width = cimage.width
+                    if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
+                        width = cimage.bytes_per_line << 3
+                    image_list.append(
+                        (
+                            Colorspace.P,
+                            (300, 300),
+                            ImageFormat.PBM,
+                            zlib.compress(out),
+                            width,
+                            cimage.height,
+                            [0xffffff, 0],
+                            False,
+                            1,
+                            0
+                        )
+                    )
+                elif (image_type[image_type_enum] == "JBIG2"):
+                    from jbigdec import SaveJbig2AsBmp
+                    SaveJbig2AsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
+                    print("TODO: JBIG2 Images at Page %04d_%04d" % (i+1, j))
+                elif (image_type[image_type_enum] == "JPEG"):
+                    (height, width) = struct.unpack(">HH", image_data[163:167])
+                    image_list.append(
+                        (
+                            Colorspace.RGB,
+                            (300, 300),
+                            ImageFormat.JPEG,
+                            image_data,
+                            width,
+                            height,
+                            [],
+                            False,
+                            8,
+                            0
+                        )
+                    )
+                    print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
+        pdf_data = convert_ImageList(image_list)
+        with open(dest, 'wb') as f:
+            f.write(pdf_data)
 
     def _parse_hn(self):
         if (self._TOC_NUMBER_OFFSET > 0):
