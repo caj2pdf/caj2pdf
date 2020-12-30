@@ -339,7 +339,8 @@ class CAJParser(object):
                             0
                         )
                     )
-                    print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
+                    if (image_type_enum == 1):
+                        print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
         pdf_data = convert_ImageList(image_list)
         with open(dest, 'wb') as f:
             f.write(pdf_data)
