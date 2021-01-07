@@ -17,6 +17,20 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+# Portions Copyright 2021 (c) Hin-Tak Leung <htl10@users.sourceforge.net>
+#     - img2pdf 0.3.4 renamed and adapted for usage by caj2pdf
+#
+# The main changes are:
+#
+# - removal of large GUI routine and dependencies on PIL.TiffImagePlugin
+#   (and zlib.deflate 1-bit input, rather than ccitt-g4 compress them)
+#
+# - different default dpi, inverting images
+#
+# - allow feeding input images directly from memory, instead of reading from disk
+#
+# - remove dependency on pdfrw
+
 import sys
 import os
 import zlib
