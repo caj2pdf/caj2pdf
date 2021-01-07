@@ -11,7 +11,7 @@
 #
 #  Then, run
 #
-#       cc -fPIC --shared -o libjbigdec.so -Wl,-rpath,. -Wall jbigdec.cc -L. -lreaderex_x64
+#       cc -Wall -fPIC --shared -o libjbigdec.so jbigdec.cc JBigDecode.cc
 
 from ctypes import *
 import os
@@ -19,13 +19,13 @@ import struct
 
 libjbigdec = cdll.LoadLibrary("./libjbigdec.so")
 
-SaveJbigAsBmp = libjbigdec.SaveJbigAsBmp
-SaveJbigAsBmp.restype = None
-SaveJbigAsBmp.argtypes = [c_void_p, c_int, c_char_p]
+#SaveJbigAsBmp = libjbigdec.SaveJbigAsBmp
+#SaveJbigAsBmp.restype = None
+#SaveJbigAsBmp.argtypes = [c_void_p, c_int, c_char_p]
 
-SaveJbig2AsBmp = libjbigdec.SaveJbig2AsBmp
-SaveJbig2AsBmp.restype = None
-SaveJbig2AsBmp.argtypes = [c_void_p, c_int, c_char_p]
+#SaveJbig2AsBmp = libjbigdec.SaveJbig2AsBmp
+#SaveJbig2AsBmp.restype = None
+#SaveJbig2AsBmp.argtypes = [c_void_p, c_int, c_char_p]
 
 jbigDecode = libjbigdec.jbigDecode
 jbigDecode.restype = None
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     buffer_size = os.stat(sys.argv[1]).st_size
     buffer = f.read()
 
-    SaveJbigAsBmp(buffer, buffer_size, sys.argv[2].encode("ascii"))
+    #SaveJbigAsBmp(buffer, buffer_size, sys.argv[2].encode("ascii"))
 
     cimage = CImage(buffer)
     out = cimage.DecodeJbig()

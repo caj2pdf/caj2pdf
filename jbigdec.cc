@@ -10,11 +10,11 @@
 
   Then, run
 
-      cc -o jbigdec -Wl,-rpath,. -Wall jbigdec.cc -L. -lreaderex_x64
+      cc -DHAVE_MAIN -Wall -o jbigdec jbigdec.cc -Wl,-rpath,. -L. -lreaderex_x64
 
   For the python module, also:
 
-      cc -fPIC --shared -o libjbigdec.so -Wl,-rpath,. -Wall jbigdec.cc -L. -lreaderex_x64
+      cc -Wall -fPIC --shared -o libjbigdec.so jbigdec.cc JBigDecode.cc
 
   and to generate the "image_dump_*.dat":
 
@@ -57,6 +57,7 @@ extern "C" {
     void MakeTypicalLine(int);
     void RenormDe();
   };
+#ifdef HAVE_MAIN
   class CImage {
   public:
     static CImage* DecodeJbig(void*, unsigned int, unsigned int*);
@@ -75,6 +76,7 @@ void SaveJbig2AsBmp(void* in, unsigned int len, char const* outfile)
   CImage* x = CImage::DecodeJbig2(in, len, NULL);
   x->SaveAsBmp(outfile);
 }
+#endif
 
 void jbigDecode(char* inbuf, unsigned int size, unsigned int height,
                 unsigned int bitwidth, unsigned int bitwidth_in_bytes /* rounded up to x4 */, char*outbuf)
@@ -86,6 +88,7 @@ void jbigDecode(char* inbuf, unsigned int size, unsigned int height,
 
 }
 
+#ifdef HAVE_MAIN
 int main(int argc, char *argv[])
 {
   size_t buflen = 80000; // large number - should be large enough to hold the whole input file.
@@ -121,3 +124,4 @@ int main(int argc, char *argv[])
   fwrite(out, 1, bytes_per_line * height, fout);
   fclose(fout); // "cmp -i 62:13 x.bmp x.pbm" shows nothing - identical.
 }
+#endif
