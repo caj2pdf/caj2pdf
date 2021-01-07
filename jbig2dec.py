@@ -5,9 +5,11 @@
 #
 #  python ctypes module and short program to decode JBIG2 image data in a CAJ file.
 
-#  To build:
+#  To build, either libpoppler-based, or libjbig2dec-based (pick only one!):
 #
-#      cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2codec.so decode_jbig2data.cc `pkg-config --libs poppler`
+#      cc -Wall `pkg-config --cflags poppler`  -fPIC -shared -o libjbig2codec.so decode_jbig2data.cc   `pkg-config --libs poppler`
+#
+#      cc -Wall `pkg-config --cflags jbig2dec` -fPIC -shared -o libjbig2codec.so decode_jbig2data_x.cc `pkg-config --libs jbig2dec`
 
 
 from ctypes import *
