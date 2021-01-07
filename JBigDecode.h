@@ -3,6 +3,18 @@
   See The FreeType Project LICENSE for license terms.
 
   Decode-only part of JBigCodec. Drop-in compatible with LibReaderEx's.
+
+  Note: MPS/ST are very wasteful, as only 1-bit is used, and
+        array of length 0x20 (5 contexts) instead of 0x4000 (14 contexts).
+
+        GetBit() has /3 instead of >> 3, GetCX() only 5 contexts instead of 10/14.
+        SLNTP / LNTP is neither the three-line template nor the two-line template
+        form (and GetBit() is strange anyway).
+
+        LpsExchange/MpsExchange/RenormDe/ByteIn/InitDecode are essentially
+        identical as in T-82, as well as Decode1() and Decode().
+
+
 */
 class JBigCodec {
 public:
@@ -18,9 +30,9 @@ public:
   void  InitDecode(char*, unsigned int);
   int   LowestDecode();
   int   LowestDecodeLine(unsigned int, char*, char*, unsigned int, char*);
-  void LpsExchange(int, unsigned int, unsigned int);
+  void  LpsExchange(int, unsigned int, unsigned int);
   void* MakeTypicalLine(int);
-  void MpsExchange(int, unsigned int, unsigned int);
+  void  MpsExchange(int, unsigned int, unsigned int);
   void  RenormDe();
 private:
   unsigned int A_interval;
