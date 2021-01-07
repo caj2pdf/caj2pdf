@@ -7,7 +7,7 @@
 
   To build:
 
-      cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2dec.so decode_jbig2data.cc `pkg-config --libs poppler`
+      cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2codec.so decode_jbig2data.cc `pkg-config --libs poppler`
 */
 
 #include "JBIG2Stream.h"

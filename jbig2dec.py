@@ -7,14 +7,14 @@
 
 #  To build:
 #
-#      cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2dec.so decode_jbig2data.cc `pkg-config --libs poppler`
+#      cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2codec.so decode_jbig2data.cc `pkg-config --libs poppler`
 
 
 from ctypes import *
 import struct
 
-libjbig2dec = cdll.LoadLibrary("./libjbig2dec.so")
-decode_jbig2data_c    = libjbig2dec.decode_jbig2data_c
+libjbig2codec = cdll.LoadLibrary("./libjbig2codec.so")
+decode_jbig2data_c    = libjbig2codec.decode_jbig2data_c
 
 decode_jbig2data_c.restype   = c_int
 decode_jbig2data_c.argtypes  = [c_void_p, c_int, c_void_p, c_int, c_int, c_int, c_int]

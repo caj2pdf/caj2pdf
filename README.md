@@ -12,7 +12,7 @@
 
 ```
 cc -Wall -fPIC --shared -o libjbigdec.so jbigdec.cc JBigDecode.cc
-cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2dec.so decode_jbig2data.cc `pkg-config --libs poppler`
+cc -Wall `pkg-config --cflags poppler` -fPIC -shared -o libjbig2codec.so decode_jbig2data.cc `pkg-config --libs poppler`
 ```
 
 **关于两种格式文件结构的分析进展和本项目的实现细节，请查阅[项目 Wiki](https://github.com/JeziL/caj2pdf/wiki)。**
