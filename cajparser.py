@@ -320,9 +320,28 @@ class CAJParser(object):
                         )
                     )
                 elif (image_type[image_type_enum] == "JBIG2"):
-                    from jbigdec import SaveJbig2AsBmp
-                    SaveJbig2AsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
-                    print("TODO: JBIG2 Images at Page %04d_%04d" % (i+1, j))
+                    from jbig2dec import CImage
+                    cimage = CImage(image_data)
+                    out = cimage.DecodeJbig2()
+                    # PBM is only padded to 8 rather than 32.
+                    # If the padding is larger, write padded file.
+                    width = cimage.width
+                    if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
+                        width = cimage.bytes_per_line << 3
+                    image_list.append(
+                        (
+                            Colorspace.P,
+                            (300, 300),
+                            ImageFormat.PBM,
+                            zlib.compress(out),
+                            width,
+                            cimage.height,
+                            [0xffffff, 0],
+                            False,
+                            1,
+                            0
+                        )
+                    )
                 elif (image_type[image_type_enum] == "JPEG"):
                     (height, width) = struct.unpack(">HH", image_data[163:167])
                     image_list.append(
