@@ -8,6 +8,18 @@
   To build:
 
       cc -Wall `pkg-config --cflags jbig2dec` -fPIC -shared -o libjbig2codec.so decode_jbig2data_x.cc `pkg-config --libs jbig2dec`
+
+  Or, if you have jbig2dec in source form, in its directory
+  (see "jbig2dec/Makefile.am" - everything exept "jbig2_image_pbm.c" and "memento.c"):
+
+      cc -I . -Wall -fPIC -shared -o ${CAJ2PDF_SRC}/libjbig2codec.so ${CAJ2PDF_SRC}/decode_jbig2data_x.cc \
+	jbig2.c \
+	jbig2_arith.c jbig2_arith_int.c jbig2_arith_iaid.c jbig2_huffman.c jbig2_hufftab.c \
+	jbig2_segment.c jbig2_page.c \
+	jbig2_symbol_dict.c jbig2_text.c \
+	jbig2_generic.c jbig2_refinement.c jbig2_mmr.c \
+	jbig2_halftone.c \
+	jbig2_image.c
 */
 
 #include <cstdint>
