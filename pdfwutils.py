@@ -22,7 +22,7 @@
 #
 # The main changes are:
 #
-# - removal of large GUI routine and dependencies on PIL.TiffImagePlugin
+# - removal of large GUI routine and dependencies on PIL
 #   (and zlib.deflate 1-bit input, rather than ccitt-g4 compress them)
 #
 # - different default dpi, inverting images
@@ -35,7 +35,7 @@ import sys
 import os
 import zlib
 import argparse
-from PIL import Image
+#from PIL import Image
 
 # TiffImagePlugin.DEBUG = True
 from datetime import datetime
