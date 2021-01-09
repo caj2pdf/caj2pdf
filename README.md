@@ -8,7 +8,7 @@
 
 ## How far we've come
 
-知网下载到的后缀为 `caj` 的文件内部结构其实分为两类：CAJ 格式和 HN 格式（受考察样本所限可能还有更多）。目前本项目支持 CAJ 格式文件的转换，HN 格式的转换未完善，并且需要建立两个新的共享库，详情如下：
+知网下载到的后缀为 `caj` 的文件内部结构其实分为两类：CAJ 格式和 HN 格式（受考察样本所限可能还有更多）。目前本项目支持 CAJ 格式文件的转换，HN 格式的转换未完善，并且需要建立两个新的共享库（除了Microsoft Windows：我们提供Microsoft Windows 32-bit/64-bit DLLs），详情如下：
 
 ```
 cc -Wall -fPIC --shared -o libjbigdec.so jbigdec.cc JBigDecode.cc
@@ -38,7 +38,7 @@ cc -Wall `pkg-config --cflags jbig2dec` -fPIC -shared -o libjbig2codec.so decode
 - [PyPDF2](https://github.com/mstamy2/PyPDF2)
 - [mutool](https://mupdf.com/index.html)
 
-HN 格式需要
+除了Microsoft Windows：我们提供Microsoft Windows 32-bit/64-bit DLLs，HN 格式需要
 
 - C/C++编译器
 - libpoppler开发包，或libjbig2dec开发包
