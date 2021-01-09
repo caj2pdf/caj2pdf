@@ -15,7 +15,17 @@
 from ctypes import *
 import struct
 
-libjbig2codec = cdll.LoadLibrary("./libjbig2codec.so")
+import platform
+
+arch = platform.architecture()
+if (arch[1] == 'WindowsPE'):
+    if (arch[0] == '64bit'):
+        libjbig2codec = cdll.LoadLibrary("libjbig2codec-w64.dll")
+    else:
+        libjbig2codec = cdll.LoadLibrary("libjbig2codec-w32.dll")
+else:
+    libjbig2codec = cdll.LoadLibrary("./libjbig2codec.so")
+
 decode_jbig2data_c    = libjbig2codec.decode_jbig2data_c
 
 decode_jbig2data_c.restype   = c_int
