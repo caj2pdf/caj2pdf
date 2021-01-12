@@ -146,7 +146,6 @@ class CAJParser(object):
 
         # deal with disordered PDF data
         endobj_addr = fnd_all(pdf, b"endobj")
-        pdf_data = b"%PDF-1.3\r\n"
         obj_no = []
         for addr in endobj_addr:
             startobj = fnd_rvrs(pdf, b" 0 obj", addr)
@@ -161,11 +160,6 @@ class CAJParser(object):
                 obj_len = addr - startobj + 6
                 pdf.seek(startobj)
                 [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
-                pdf_data += (b"\r" + obj)
-        pdf_data += b"\r\n"
-        with open("pdf.tmp", 'wb') as f:
-            f.write(pdf_data)
-        pdf = open("pdf.tmp", "rb")
 
         # Add Catalog (find obj_no of pages)
         inds_addr = [i + 8 for i in fnd_all(pdf, b"/Parent")]
