@@ -1,5 +1,5 @@
 /*
-  Copyright 2020 (c) Hin-Tak Leung <htl10@users.sourceforge.net>
+  Copyright 2020-2021 (c) Hin-Tak Leung <htl10@users.sourceforge.net>
   See The FreeType Project LICENSE for license terms.
 
   This short program decodes the image data in a CAJ file.
