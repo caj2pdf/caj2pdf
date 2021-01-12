@@ -209,6 +209,7 @@ class CAJParser(object):
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
             catalog_obj_no, root_pages_obj_no), "utf-8")
         pdf_data += catalog
+        pdf.close()
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
         pdf = open("pdf.tmp", "rb")
@@ -222,6 +223,7 @@ class CAJParser(object):
             pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj\r".format(
                 root_pages_obj_no, kids_str, self.page_num)
             pdf_data += bytes(pages_str, "utf-8")
+            pdf.close()
             with open("pdf.tmp", 'wb') as f:
                 f.write(pdf_data)
             pdf = open("pdf.tmp", "rb")
@@ -262,6 +264,7 @@ class CAJParser(object):
                     tpon, kids_str, count_dict[tpon])
                 pdf_data += bytes(pages_str, "utf-8")
         pdf_data += bytes("\n%%EOF\r", "utf-8")
+        pdf.close()
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
 
@@ -274,7 +277,6 @@ class CAJParser(object):
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
-        pdf.close()
         os.remove("pdf.tmp")
         os.remove("pdf_toc.pdf")
 
