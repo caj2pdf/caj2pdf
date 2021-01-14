@@ -120,9 +120,9 @@ class CAJParser(object):
         if self.format == "CAJ":
             pass
         if self.format == "HN":
-            self._parse_hn()
+            self._text_extract_hn()
         elif self.format == "C8":
-            self._parse_hn()
+            self._text_extract_hn()
         elif self.format == "PDF":
             pass
         elif self.format == "KDH":
@@ -375,6 +375,34 @@ class CAJParser(object):
         pdf_data = convert_ImageList(image_list)
         with open(dest, 'wb') as f:
             f.write(pdf_data)
+
+    def _text_extract_hn(self):
+        if (self._TOC_NUMBER_OFFSET > 0):
+            self.get_toc(verbose=True)
+        caj = open(self.filename, "rb")
+
+        for i in range(self.page_num):
+            caj.seek(self._TOC_END_OFFSET + i * 20)
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            caj.seek(page_data_offset)
+            text_header_read32 = caj.read(32)
+            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                import zlib
+                caj.seek(page_data_offset + 24)
+                data = caj.read(size_of_text_section - 24)
+                output = zlib.decompress(data, bufsize=expanded_text_size)
+                if (len(output) != expanded_text_size):
+                    raise SystemExit("Unexpected:", len(output), expanded_text_size)
+            else:
+                caj.seek(page_data_offset)
+                output = caj.read(size_of_text_section)
+                print()
+            from HNParsePage import HNParsePage
+            page_data = HNParsePage(output)
+            print("Text on Page %d:" % (i+1))
+            print(page_data.texts)
+            #print("Figures:\n", page_data.figures)
 
     def _parse_hn(self):
         if (self._TOC_NUMBER_OFFSET > 0):
