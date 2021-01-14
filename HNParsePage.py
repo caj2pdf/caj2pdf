@@ -20,8 +20,9 @@ class HNParsePage(object):
             self.offset += 6
 
         def Figure(self):
-            (ignore1, int1, short1, short2, int2, int3, int4, int5)= struct.unpack("<HIHHIIII", self.data[self.offset:self.offset+26])
-            self.figures.append([ignore1, int1, short1, short2, int2, int3, int4, int5])
+            (ignore1, offset_x, offset_y, size_x, size_y, int2, int3, int4, int5)= struct.unpack("<HHHHHIIII", self.data[self.offset:self.offset+26])
+            # in units of 1/2.473 pixels
+            self.figures.append([offset_x, offset_y, size_x, size_y])
             self.offset += 26
 
         dispatch = {
