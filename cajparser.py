@@ -116,6 +116,18 @@ class CAJParser(object):
         elif self.format == "KDH":
             pass
 
+    def text_extract(self):
+        if self.format == "CAJ":
+            pass
+        if self.format == "HN":
+            self._parse_hn()
+        elif self.format == "C8":
+            self._parse_hn()
+        elif self.format == "PDF":
+            pass
+        elif self.format == "KDH":
+            pass
+
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
 
