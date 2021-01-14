@@ -423,11 +423,17 @@ class CAJParser(object):
                 with open(image_name + ".dat", "wb") as f:
                     f.write(image_data)
                 if (image_type[image_type_enum] == "JBIG"):
-                    from jbigdec import SaveJbigAsBmp
-                    SaveJbigAsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
+                    try:
+                        from jbigdec import SaveJbigAsBmp
+                        SaveJbigAsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
+                    except ImportError:
+                        pass
                 elif (image_type[image_type_enum] == "JBIG2"):
-                    from jbigdec import SaveJbig2AsBmp
-                    SaveJbig2AsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
+                    try:
+                        from jbigdec import SaveJbig2AsBmp
+                        SaveJbig2AsBmp(image_data, size_of_image_data, (image_name + ".bmp").encode('ascii'))
+                    except ImportError:
+                        pass
                 elif (image_type[image_type_enum] == "JPEG"):
                     with open(image_name + ".jpg", "wb") as f:
                         f.write(image_data)
