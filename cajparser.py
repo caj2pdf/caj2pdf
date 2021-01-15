@@ -290,6 +290,23 @@ class CAJParser(object):
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
             [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            caj.seek(page_data_offset)
+            text_header_read32 = caj.read(32)
+            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                import zlib
+                caj.seek(page_data_offset + 24)
+                data = caj.read(size_of_text_section - 24)
+                output = zlib.decompress(data, bufsize=expanded_text_size)
+                if (len(output) != expanded_text_size):
+                    raise SystemExit("Unexpected:", len(output), expanded_text_size)
+            else:
+                caj.seek(page_data_offset)
+                output = caj.read(size_of_text_section)
+            from HNParsePage import HNParsePage
+            page_data = HNParsePage(output)
+
+            print("Figures:\n", page_data.figures)
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
