@@ -330,19 +330,17 @@ class CAJParser(object):
                     width = cimage.width
                     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
                         width = cimage.bytes_per_line << 3
-                    image_list.append(
-                        (
-                            Colorspace.P,
-                            (300, 300),
-                            ImageFormat.PBM,
-                            zlib.compress(out),
-                            width,
-                            cimage.height,
-                            [0xffffff, 0],
-                            False,
-                            1,
-                            0
-                        )
+                    image_item = (
+                        Colorspace.P,
+                        (300, 300),
+                        ImageFormat.PBM,
+                        zlib.compress(out),
+                        width,
+                        cimage.height,
+                        [0xffffff, 0],
+                        False,
+                        1,
+                        0
                     )
                 elif (image_type[image_type_enum] == "JBIG2"):
                     from jbig2dec import CImage
@@ -353,40 +351,37 @@ class CAJParser(object):
                     width = cimage.width
                     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
                         width = cimage.bytes_per_line << 3
-                    image_list.append(
-                        (
-                            Colorspace.P,
-                            (300, 300),
-                            ImageFormat.PBM,
-                            zlib.compress(out),
-                            width,
-                            cimage.height,
-                            [0xffffff, 0],
-                            False,
-                            1,
-                            0
-                        )
+                    image_item = (
+                        Colorspace.P,
+                        (300, 300),
+                        ImageFormat.PBM,
+                        zlib.compress(out),
+                        width,
+                        cimage.height,
+                        [0xffffff, 0],
+                        False,
+                        1,
+                        0
                     )
                 elif (image_type[image_type_enum] == "JPEG"):
                     (height, width) = struct.unpack(">HH", image_data[163:167])
-                    image_list.append(
-                        (
-                            Colorspace.RGB,
-                            (300, 300),
-                            ImageFormat.JPEG,
-                            image_data,
-                            width,
-                            height,
-                            [],
-                            False,
-                            8,
-                            0
-                        )
+                    image_item = (
+                        Colorspace.RGB,
+                        (300, 300),
+                        ImageFormat.JPEG,
+                        image_data,
+                        width,
+                        height,
+                        [],
+                        False,
+                        8,
+                        0
                     )
                     if (image_type_enum == 1):
                         print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
                 else:
                     raise SystemExit("Unknown Image Type %d" % (image_type_enum))
+                image_list.append(image_item)
         pdf_data = convert_ImageList(image_list)
         with open(dest, 'wb') as f:
             f.write(pdf_data)
