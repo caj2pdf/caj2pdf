@@ -15,8 +15,27 @@ class HNParsePage(object):
             try:
                 self.characters.append(bytes([self.data[self.offset+5],self.data[self.offset+4]]).decode("gbk"))
             except UnicodeDecodeError:
+                # HTL: When cut-and-paste on Linux, these transform to GB18030,
+                # but I believe they are OCR artifacts. Where they occur,
+                # 0xA38D 0xA38a (always together) are line-breaks, and 0xA389, 0xA3A0
+                # are tabs and spaces.
+                hash = {
+                    0xA389 : "\t",
+                    0xA38a : "\n",
+                    0xA38D : "\r",
+                    0xA3A0 : " ",
+                    # # GB18030
+                    #0xA389 : "",
+                    #0xA38a : "",
+                    #0xA38D : "",
+                    #0xA3A0 : "",
+                }
                 code = self.data[self.offset+5] * 256 + self.data[self.offset+4]
-                print("Undecoded:", code)
+                try:
+                    #self.characters.append("<0x%04X>\n" % code)
+                    self.characters.append(hash[code])
+                except KeyError:
+                    self.characters.append("<0x%04X>\n" % code)
             self.offset += 6
 
         def Figure(self):
