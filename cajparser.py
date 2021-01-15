@@ -412,7 +412,6 @@ class CAJParser(object):
             else:
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
-                print()
             from HNParsePage import HNParsePage
             page_data = HNParsePage(output)
             print("Text on Page %d:" % (i+1))
