@@ -2022,18 +2022,27 @@ def convert_ImageList(*images, **kwargs):
     if not isinstance(images, (list, tuple)):
         images = [images]
 
-    for (
-        color,
-        ndpi,
-        imgformat,
-        imgdata,
-        imgwidthpx,
-        imgheightpx,
-        palette,
-        inverted,
-        depth,
-        rotation,
-    ) in images:
+    while (1):
+        if (len(images) == 0):
+            break
+        image_item = images.pop(0)
+        if (image_item == None):
+            images.pop(0)
+            continue
+
+        (
+            color,
+            ndpi,
+            imgformat,
+            imgdata,
+            imgwidthpx,
+            imgheightpx,
+            palette,
+            inverted,
+            depth,
+            rotation,
+        ) = image_item
+
         pagewidth, pageheight, imgwidthpdf, imgheightpdf = kwargs["layout_fun"](
             imgwidthpx, imgheightpx, ndpi
         )
