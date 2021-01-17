@@ -116,6 +116,18 @@ class CAJParser(object):
         elif self.format == "KDH":
             pass
 
+    def text_extract(self):
+        if self.format == "CAJ":
+            pass
+        if self.format == "HN":
+            self._text_extract_hn()
+        elif self.format == "C8":
+            self._text_extract_hn()
+        elif self.format == "PDF":
+            pass
+        elif self.format == "KDH":
+            pass
+
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
 
@@ -134,7 +146,6 @@ class CAJParser(object):
 
         # deal with disordered PDF data
         endobj_addr = fnd_all(pdf, b"endobj")
-        pdf_data = b"%PDF-1.3\r\n"
         obj_no = []
         for addr in endobj_addr:
             startobj = fnd_rvrs(pdf, b" 0 obj", addr)
@@ -149,11 +160,6 @@ class CAJParser(object):
                 obj_len = addr - startobj + 6
                 pdf.seek(startobj)
                 [obj] = struct.unpack(str(obj_len) + "s", pdf.read(obj_len))
-                pdf_data += (b"\r" + obj)
-        pdf_data += b"\r\n"
-        with open("pdf.tmp", 'wb') as f:
-            f.write(pdf_data)
-        pdf = open("pdf.tmp", "rb")
 
         # Add Catalog (find obj_no of pages)
         inds_addr = [i + 8 for i in fnd_all(pdf, b"/Parent")]
@@ -203,6 +209,7 @@ class CAJParser(object):
         catalog = bytes("{0} 0 obj\r<</Type /Catalog\r/Pages {1} 0 R\r>>\rendobj\r".format(
             catalog_obj_no, root_pages_obj_no), "utf-8")
         pdf_data += catalog
+        pdf.close()
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
         pdf = open("pdf.tmp", "rb")
@@ -216,6 +223,7 @@ class CAJParser(object):
             pages_str = "{0} 0 obj\r<<\r/Type /Pages\r/Kids {1}\r/Count {2}\r>>\rendobj\r".format(
                 root_pages_obj_no, kids_str, self.page_num)
             pdf_data += bytes(pages_str, "utf-8")
+            pdf.close()
             with open("pdf.tmp", 'wb') as f:
                 f.write(pdf_data)
             pdf = open("pdf.tmp", "rb")
@@ -256,6 +264,7 @@ class CAJParser(object):
                     tpon, kids_str, count_dict[tpon])
                 pdf_data += bytes(pages_str, "utf-8")
         pdf_data += bytes("\n%%EOF\r", "utf-8")
+        pdf.close()
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
 
@@ -268,7 +277,6 @@ class CAJParser(object):
 
         # Add Outlines
         add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
-        pdf.close()
         os.remove("pdf.tmp")
         os.remove("pdf_toc.pdf")
 
@@ -282,6 +290,28 @@ class CAJParser(object):
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
             [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            caj.seek(page_data_offset)
+            text_header_read32 = caj.read(32)
+            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                import zlib
+                caj.seek(page_data_offset + 24)
+                data = caj.read(size_of_text_section - 24)
+                output = zlib.decompress(data, bufsize=expanded_text_size)
+                if (len(output) != expanded_text_size):
+                    raise SystemExit("Unexpected:", len(output), expanded_text_size)
+            else:
+                caj.seek(page_data_offset)
+                output = caj.read(size_of_text_section)
+            from HNParsePage import HNParsePage
+            page_data = HNParsePage(output)
+
+            if (images_per_page > 1):
+                if (len(page_data.figures) == images_per_page):
+                    image_list.append(None)
+                    image_list.append(page_data.figures)
+                else:
+                    raise SystemExit("Image Count %d != %d" % (len(page_data.figures), images_per_page))
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
@@ -292,10 +322,6 @@ class CAJParser(object):
                 caj.seek(offset_to_image_data)
                 image_data = caj.read(size_of_image_data)
                 current_offset = offset_to_image_data + size_of_image_data
-                image_name = "image_dump_%04d" % (i+1)
-                if (j > 0):
-                    image_name = "image_dump_%04d_%04d" % (i+1, j)
-                    print("TODO: Multiple Images at Page %04d_%04d" % (i+1, j))
                 if (image_type[image_type_enum] == "JBIG"):
                     from jbigdec import CImage
                     cimage = CImage(image_data)
@@ -305,19 +331,17 @@ class CAJParser(object):
                     width = cimage.width
                     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
                         width = cimage.bytes_per_line << 3
-                    image_list.append(
-                        (
-                            Colorspace.P,
-                            (300, 300),
-                            ImageFormat.PBM,
-                            zlib.compress(out),
-                            width,
-                            cimage.height,
-                            [0xffffff, 0],
-                            False,
-                            1,
-                            0
-                        )
+                    image_item = (
+                        Colorspace.P,
+                        (300, 300),
+                        ImageFormat.PBM,
+                        zlib.compress(out),
+                        width,
+                        cimage.height,
+                        [0xffffff, 0],
+                        False,
+                        1,
+                        0
                     )
                 elif (image_type[image_type_enum] == "JBIG2"):
                     from jbig2dec import CImage
@@ -328,41 +352,68 @@ class CAJParser(object):
                     width = cimage.width
                     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
                         width = cimage.bytes_per_line << 3
-                    image_list.append(
-                        (
-                            Colorspace.P,
-                            (300, 300),
-                            ImageFormat.PBM,
-                            zlib.compress(out),
-                            width,
-                            cimage.height,
-                            [0xffffff, 0],
-                            False,
-                            1,
-                            0
-                        )
+                    image_item = (
+                        Colorspace.P,
+                        (300, 300),
+                        ImageFormat.PBM,
+                        zlib.compress(out),
+                        width,
+                        cimage.height,
+                        [0xffffff, 0],
+                        False,
+                        1,
+                        0
                     )
                 elif (image_type[image_type_enum] == "JPEG"):
                     (height, width) = struct.unpack(">HH", image_data[163:167])
-                    image_list.append(
-                        (
-                            Colorspace.RGB,
-                            (300, 300),
-                            ImageFormat.JPEG,
-                            image_data,
-                            width,
-                            height,
-                            [],
-                            False,
-                            8,
-                            0
-                        )
-                    )
                     if (image_type_enum == 1):
-                        print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
+                        # non-inverted JPEG Images
+                        height = -height
+                    image_item = (
+                        Colorspace.RGB,
+                        (300, 300),
+                        ImageFormat.JPEG,
+                        image_data,
+                        width,
+                        height,
+                        [],
+                        False,
+                        8,
+                        0
+                    )
+                else:
+                    raise SystemExit("Unknown Image Type %d" % (image_type_enum))
+                image_list.append(image_item)
         pdf_data = convert_ImageList(image_list)
         with open(dest, 'wb') as f:
             f.write(pdf_data)
+
+    def _text_extract_hn(self):
+        if (self._TOC_NUMBER_OFFSET > 0):
+            self.get_toc(verbose=True)
+        caj = open(self.filename, "rb")
+
+        for i in range(self.page_num):
+            caj.seek(self._TOC_END_OFFSET + i * 20)
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            caj.seek(page_data_offset)
+            text_header_read32 = caj.read(32)
+            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                import zlib
+                caj.seek(page_data_offset + 24)
+                data = caj.read(size_of_text_section - 24)
+                output = zlib.decompress(data, bufsize=expanded_text_size)
+                if (len(output) != expanded_text_size):
+                    raise SystemExit("Unexpected:", len(output), expanded_text_size)
+            else:
+                caj.seek(page_data_offset)
+                output = caj.read(size_of_text_section)
+            from HNParsePage import HNParsePage
+            page_data = HNParsePage(output)
+            print("Text on Page %d:" % (i+1))
+            print(page_data.texts)
+            #print("Figures:\n", page_data.figures)
 
     def _parse_hn(self):
         if (self._TOC_NUMBER_OFFSET > 0):

@@ -23,6 +23,9 @@ if __name__ == "__main__":
     parse_parser = subparsers.add_parser("parse", help="Parse CAJ file for debugging/development")
     parse_parser.add_argument("input", help="Path to the CAJ file.")
 
+    text_extract_parser = subparsers.add_parser("text-extract", help="Parse CAJ file for debugging/development")
+    text_extract_parser.add_argument("input", help="Path to the CAJ file.")
+
     args = parser.parse_args()
 
     if args.command == "show":
@@ -50,6 +53,10 @@ if __name__ == "__main__":
         toc = caj.get_toc()
         add_outlines(toc, args.output, "tmp.pdf")
         os.replace("tmp.pdf", args.output)
+
+    if args.command == "text-extract":
+        caj = CAJParser(args.input)
+        caj.text_extract()
 
     if args.command == "parse":
         caj = CAJParser(args.input)
