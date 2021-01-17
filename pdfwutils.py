@@ -1041,7 +1041,12 @@ class pdfdoc(object):
             % (imgwidthpdf, -imgheightpdf, imgxpdf, imgypdf)
         ).encode("ascii")
 
-        if True:
+        image_dict = PdfDict(Im0=image)
+        secondary_images = []
+        for i in range(len(collected_images)):
+            if i == 0:
+                # skip main image
+                continue
             Im_i ={}
             (
                 Im_i['color'],
@@ -1054,7 +1059,7 @@ class pdfdoc(object):
                 Im_i['inverted'],
                 Im_i['depth'],
                 Im_i['rotate'],
-            ) = collected_images[1]
+            ) = collected_images[i]
             Im_i['pagewidth'], Im_i['pageheight'], Im_i['imgwidthpdf'], Im_i['imgheightpdf'] = default_layout_fun(
                 Im_i['imgwidthpx'], Im_i['imgheightpx'], Im_i['ndpi']
             )
@@ -1077,13 +1082,13 @@ class pdfdoc(object):
             image1[PdfName.BitsPerComponent] = Im_i['depth']
 
             text += (
-                "\nq\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im1 Do\nQ"
-                % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], Im_i['imgxpdf'], Im_i['imgypdf'])
+                "\nq\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im%d Do\nQ"
+                % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], Im_i['imgxpdf'], Im_i['imgypdf'], i)
             ).encode("ascii")
+            image_dict[b'/Im%d' % i]=image1
+            secondary_images.append(image1)
 
         content = PdfDict(stream=convert_load(text))
-        image_dict = PdfDict(Im0=image)
-        image_dict[b'/Im1']=image1
         resources = PdfDict(XObject=image_dict)
 
         page = PdfDict(indirect=True)
@@ -1146,7 +1151,8 @@ class pdfdoc(object):
         if not self.with_pdfrw:
             self.writer.addobj(content)
             self.writer.addobj(image)
-            self.writer.addobj(image1)
+            for im in secondary_images:
+                self.writer.addobj(im)
 
     def tostring(self):
         stream = BytesIO()
