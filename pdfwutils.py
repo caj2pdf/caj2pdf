@@ -1081,9 +1081,12 @@ class pdfdoc(object):
             image1[PdfName.ColorSpace] = PdfName.DeviceRGB
             image1[PdfName.BitsPerComponent] = Im_i['depth']
 
+            offset_x = coordinates[i][0] / 300 * 72 / 2.473
+            offset_y = coordinates[i][1] / 300 * 72 / 2.473
+
             text += (
                 "\nq\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im%d Do\nQ"
-                % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], Im_i['imgxpdf'], Im_i['imgypdf'], i)
+                % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], offset_x, imgypdf - offset_y, i)
             ).encode("ascii")
             image_dict[b'/Im%d' % i]=image1
             secondary_images.append(image1)
