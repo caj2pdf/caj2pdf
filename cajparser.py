@@ -371,6 +371,9 @@ class CAJParser(object):
                     )
                 elif (image_type[image_type_enum] == "JPEG"):
                     (height, width) = struct.unpack(">HH", image_data[163:167])
+                    if (image_type_enum == 1):
+                        # non-inverted JPEG Images
+                        height = -height
                     image_item = (
                         Colorspace.RGB,
                         (300, 300),
@@ -383,8 +386,6 @@ class CAJParser(object):
                         8,
                         0
                     )
-                    if (image_type_enum == 1):
-                        print("TODO: non-inverted JPEG Images at Page %04d_%04d" % (i+1, j))
                 else:
                     raise SystemExit("Unknown Image Type %d" % (image_type_enum))
                 image_list.append(image_item)

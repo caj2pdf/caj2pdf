@@ -787,7 +787,10 @@ class pdfdoc(object):
         image[PdfName.Subtype] = PdfName.Image
         image[PdfName.Filter] = ofilter
         image[PdfName.Width] = imgwidthpx
-        image[PdfName.Height] = imgheightpx
+        if (imgheightpx < 0):
+            image[PdfName.Height] = -imgheightpx
+        else:
+            image[PdfName.Height] = imgheightpx
         image[PdfName.ColorSpace] = colorspace
         image[PdfName.BitsPerComponent] = depth
 
@@ -2046,6 +2049,8 @@ def convert_ImageList(*images, **kwargs):
         pagewidth, pageheight, imgwidthpdf, imgheightpdf = kwargs["layout_fun"](
             imgwidthpx, imgheightpx, ndpi
         )
+        if (pageheight < 0):
+            pageheight = -pageheight
 
         userunit = None
         if pagewidth < 3.00 or pageheight < 3.00:
