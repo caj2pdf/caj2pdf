@@ -1084,6 +1084,9 @@ class pdfdoc(object):
             offset_x = coordinates[i][0] / 300 * 72 / 2.473
             offset_y = coordinates[i][1] / 300 * 72 / 2.473
 
+            if (Im_i['imgheightpx'] < 0):
+                offset_y -= Im_i['imgheightpdf']
+
             text += (
                 "\nq\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im%d Do\nQ"
                 % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], offset_x, imgypdf - offset_y, i)
