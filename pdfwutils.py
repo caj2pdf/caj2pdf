@@ -899,27 +899,53 @@ class pdfdoc(object):
 
     def add_multi_imagepage(
         self,
-        color,
-        imgwidthpx,
-        imgheightpx,
-        imgformat,
-        imgdata,
-        imgwidthpdf,
-        imgheightpdf,
-        imgxpdf,
-        imgypdf,
-        pagewidth,
-        pageheight,
-        userunit=None,
-        palette=None,
-        inverted=False,
-        depth=0,
-        rotate=0,
-        cropborder=None,
-        bleedborder=None,
-        trimborder=None,
-        artborder=None,
+        coordinates,
+        collected_images
     ):
+        (
+            color,
+            ndpi,
+            imgformat,
+            imgdata,
+            imgwidthpx,
+            imgheightpx,
+            palette,
+            inverted,
+            depth,
+            rotate,
+        ) = collected_images[0]
+
+        pagewidth, pageheight, imgwidthpdf, imgheightpdf = default_layout_fun(
+            imgwidthpx, imgheightpx, ndpi
+        )
+        if (pageheight < 0):
+            pageheight = -pageheight
+
+        userunit = None
+        if pagewidth < 3.00 or pageheight < 3.00:
+            logging.warning(
+                "pdf width or height is below 3.00 - too small for some viewers!"
+            )
+        elif pagewidth > 14400.0 or pageheight > 14400.0:
+            if kwargs["allow_oversized"]:
+                userunit = find_scale(pagewidth, pageheight)
+                pagewidth /= userunit
+                pageheight /= userunit
+                imgwidthpdf /= userunit
+                imgheightpdf /= userunit
+            else:
+                raise PdfTooLargeError(
+                    "pdf width or height must not exceed 200 inches."
+                )
+        # the image is always centered on the page
+        imgxpdf = (pagewidth - imgwidthpdf) / 2.0
+        imgypdf = (pageheight + imgheightpdf) / 2.0
+
+        cropborder=None
+        bleedborder=None
+        trimborder=None
+        artborder=None
+
         if self.with_pdfrw:
             from pdfrw import PdfDict, PdfName, PdfObject, PdfString
             from pdfrw.py23_diffs import convert_load
