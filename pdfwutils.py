@@ -1041,8 +1041,50 @@ class pdfdoc(object):
             % (imgwidthpdf, -imgheightpdf, imgxpdf, imgypdf)
         ).encode("ascii")
 
+        if True:
+            Im_i ={}
+            (
+                Im_i['color'],
+                Im_i['ndpi'],
+                Im_i['imgformat'],
+                Im_i['imgdata'],
+                Im_i['imgwidthpx'],
+                Im_i['imgheightpx'],
+                Im_i['palette'],
+                Im_i['inverted'],
+                Im_i['depth'],
+                Im_i['rotate'],
+            ) = collected_images[1]
+            Im_i['pagewidth'], Im_i['pageheight'], Im_i['imgwidthpdf'], Im_i['imgheightpdf'] = default_layout_fun(
+                Im_i['imgwidthpx'], Im_i['imgheightpx'], Im_i['ndpi']
+            )
+            Im_i['imgxpdf'] = (Im_i['pagewidth'] - Im_i['imgwidthpdf']) / 2.0
+            Im_i['imgypdf'] = (Im_i['pageheight'] + Im_i['imgheightpdf']) / 2.0
+
+            ofilter = PdfName.DCTDecode
+
+            image1 = PdfDict(stream=convert_load(Im_i['imgdata']))
+
+            image1[PdfName.Type] = PdfName.XObject
+            image1[PdfName.Subtype] = PdfName.Image
+            image1[PdfName.Filter] = ofilter
+            image1[PdfName.Width] = Im_i['imgwidthpx']
+            if (Im_i['imgheightpx'] < 0):
+                image1[PdfName.Height] = -Im_i['imgheightpx']
+            else:
+                image1[PdfName.Height] = Im_i['imgheightpx']
+            image1[PdfName.ColorSpace] = PdfName.DeviceRGB
+            image1[PdfName.BitsPerComponent] = Im_i['depth']
+
+            text += (
+                "\nq\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im1 Do\nQ"
+                % (Im_i['imgwidthpdf'], -Im_i['imgheightpdf'], Im_i['imgxpdf'], Im_i['imgypdf'])
+            ).encode("ascii")
+
         content = PdfDict(stream=convert_load(text))
-        resources = PdfDict(XObject=PdfDict(Im0=image))
+        image_dict = PdfDict(Im0=image)
+        image_dict[b'/Im1']=image1
+        resources = PdfDict(XObject=image_dict)
 
         page = PdfDict(indirect=True)
         page[PdfName.Type] = PdfName.Page
@@ -1104,6 +1146,7 @@ class pdfdoc(object):
         if not self.with_pdfrw:
             self.writer.addobj(content)
             self.writer.addobj(image)
+            self.writer.addobj(image1)
 
     def tostring(self):
         stream = BytesIO()
