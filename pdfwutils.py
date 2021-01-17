@@ -897,6 +897,188 @@ class pdfdoc(object):
             self.writer.addobj(content)
             self.writer.addobj(image)
 
+    def add_multi_imagepage(
+        self,
+        color,
+        imgwidthpx,
+        imgheightpx,
+        imgformat,
+        imgdata,
+        imgwidthpdf,
+        imgheightpdf,
+        imgxpdf,
+        imgypdf,
+        pagewidth,
+        pageheight,
+        userunit=None,
+        palette=None,
+        inverted=False,
+        depth=0,
+        rotate=0,
+        cropborder=None,
+        bleedborder=None,
+        trimborder=None,
+        artborder=None,
+    ):
+        if self.with_pdfrw:
+            from pdfrw import PdfDict, PdfName, PdfObject, PdfString
+            from pdfrw.py23_diffs import convert_load
+        else:
+            PdfDict = MyPdfDict
+            PdfName = MyPdfName
+            PdfObject = MyPdfObject
+            PdfString = MyPdfString
+            convert_load = my_convert_load
+
+        if color == Colorspace["1"] or color == Colorspace.L:
+            colorspace = PdfName.DeviceGray
+        elif color == Colorspace.RGB:
+            colorspace = PdfName.DeviceRGB
+        elif color == Colorspace.CMYK or color == Colorspace["CMYK;I"]:
+            colorspace = PdfName.DeviceCMYK
+        elif color == Colorspace.P:
+            if self.with_pdfrw:
+                raise Exception(
+                    "pdfrw does not support hex strings for "
+                    "palette image input, re-run with "
+                    "--without-pdfrw"
+                )
+            colorspace = [
+                PdfName.Indexed,
+                PdfName.DeviceRGB,
+                len(palette) - 1,
+                PdfString.encode(palette, hextype=True),
+            ]
+        else:
+            raise UnsupportedColorspaceError("unsupported color space: %s" % color.name)
+
+        # either embed the whole jpeg or deflate the bitmap representation
+        if imgformat is ImageFormat.JPEG:
+            ofilter = PdfName.DCTDecode
+        elif imgformat is ImageFormat.JPEG2000:
+            ofilter = PdfName.JPXDecode
+            self.writer.version = "1.5"  # jpeg2000 needs pdf 1.5
+        elif imgformat is ImageFormat.CCITTGroup4:
+            ofilter = [PdfName.CCITTFaxDecode]
+        else:
+            ofilter = PdfName.FlateDecode
+
+        image = PdfDict(stream=convert_load(imgdata))
+
+        image[PdfName.Type] = PdfName.XObject
+        image[PdfName.Subtype] = PdfName.Image
+        image[PdfName.Filter] = ofilter
+        image[PdfName.Width] = imgwidthpx
+        if (imgheightpx < 0):
+            image[PdfName.Height] = -imgheightpx
+        else:
+            image[PdfName.Height] = imgheightpx
+        image[PdfName.ColorSpace] = colorspace
+        image[PdfName.BitsPerComponent] = depth
+
+        if color == Colorspace["CMYK;I"]:
+            # Inverts all four channels
+            image[PdfName.Decode] = [1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0]
+
+        if imgformat is ImageFormat.CCITTGroup4:
+            decodeparms = PdfDict()
+            # The default for the K parameter is 0 which indicates Group 3 1-D
+            # encoding. We set it to -1 because we want Group 4 encoding.
+            decodeparms[PdfName.K] = -1
+            if inverted:
+                decodeparms[PdfName.BlackIs1] = PdfObject("false")
+            else:
+                decodeparms[PdfName.BlackIs1] = PdfObject("true")
+            decodeparms[PdfName.Columns] = imgwidthpx
+            decodeparms[PdfName.Rows] = imgheightpx
+            image[PdfName.DecodeParms] = [decodeparms]
+        elif imgformat is ImageFormat.PBM:
+            decodeparms = PdfDict()
+            decodeparms[PdfName.Predictor] = 1
+            decodeparms[PdfName.Colors] = 1
+            decodeparms[PdfName.Columns] = imgwidthpx
+            decodeparms[PdfName.BitsPerComponent] = depth
+            image[PdfName.DecodeParms] = decodeparms
+        elif imgformat is ImageFormat.PNG:
+            decodeparms = PdfDict()
+            decodeparms[PdfName.Predictor] = 15
+            if color in [Colorspace.P, Colorspace["1"], Colorspace.L]:
+                decodeparms[PdfName.Colors] = 1
+            else:
+                decodeparms[PdfName.Colors] = 3
+            decodeparms[PdfName.Columns] = imgwidthpx
+            decodeparms[PdfName.BitsPerComponent] = depth
+            image[PdfName.DecodeParms] = decodeparms
+
+        text = (
+            "q\n%0.4f 0 0 %0.4f %0.4f %0.4f cm\n/Im0 Do\nQ"
+            % (imgwidthpdf, -imgheightpdf, imgxpdf, imgypdf)
+        ).encode("ascii")
+
+        content = PdfDict(stream=convert_load(text))
+        resources = PdfDict(XObject=PdfDict(Im0=image))
+
+        page = PdfDict(indirect=True)
+        page[PdfName.Type] = PdfName.Page
+        page[PdfName.MediaBox] = [0, 0, pagewidth, pageheight]
+        # 14.11.2 Page Boundaries
+        # ...
+        # The crop, bleed, trim, and art boxes shall not ordinarily extend
+        # beyond the boundaries of the media box. If they do, they are
+        # effectively reduced to their intersection with the media box.
+        if cropborder is not None:
+            page[PdfName.CropBox] = [
+                cropborder[1],
+                cropborder[0],
+                pagewidth - 2 * cropborder[1],
+                pageheight - 2 * cropborder[0],
+            ]
+        if bleedborder is None:
+            if PdfName.CropBox in page:
+                page[PdfName.BleedBox] = page[PdfName.CropBox]
+        else:
+            page[PdfName.BleedBox] = [
+                bleedborder[1],
+                bleedborder[0],
+                pagewidth - 2 * bleedborder[1],
+                pageheight - 2 * bleedborder[0],
+            ]
+        if trimborder is None:
+            if PdfName.CropBox in page:
+                page[PdfName.TrimBox] = page[PdfName.CropBox]
+        else:
+            page[PdfName.TrimBox] = [
+                trimborder[1],
+                trimborder[0],
+                pagewidth - 2 * trimborder[1],
+                pageheight - 2 * trimborder[0],
+            ]
+        if artborder is None:
+            if PdfName.CropBox in page:
+                page[PdfName.ArtBox] = page[PdfName.CropBox]
+        else:
+            page[PdfName.ArtBox] = [
+                artborder[1],
+                artborder[0],
+                pagewidth - 2 * artborder[1],
+                pageheight - 2 * artborder[0],
+            ]
+        page[PdfName.Resources] = resources
+        page[PdfName.Contents] = content
+        if rotate != 0:
+            page[PdfName.Rotate] = rotate
+        if userunit is not None:
+            # /UserUnit requires PDF 1.6
+            if self.writer.version < "1.6":
+                self.writer.version = "1.6"
+            page[PdfName.UserUnit] = userunit
+
+        self.writer.addpage(page)
+
+        if not self.with_pdfrw:
+            self.writer.addobj(content)
+            self.writer.addobj(image)
+
     def tostring(self):
         stream = BytesIO()
         self.tostream(stream)
@@ -2030,7 +2212,10 @@ def convert_ImageList(*images, **kwargs):
             break
         image_item = images.pop(0)
         if (image_item == None):
-            images.pop(0)
+            coordinates = images.pop(0)
+            collected_images = images[:len(coordinates)]
+            del images[:len(coordinates)]
+            pdf.add_multi_imagepage(coordinates, collected_images)
             continue
 
         (
