@@ -306,7 +306,6 @@ class CAJParser(object):
             from HNParsePage import HNParsePage
             page_data = HNParsePage(output)
 
-            print("Figures:\n", page_data.figures)
             if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
                     image_list.append(None)
@@ -323,10 +322,6 @@ class CAJParser(object):
                 caj.seek(offset_to_image_data)
                 image_data = caj.read(size_of_image_data)
                 current_offset = offset_to_image_data + size_of_image_data
-                image_name = "image_dump_%04d" % (i+1)
-                if (j > 0):
-                    image_name = "image_dump_%04d_%04d" % (i+1, j)
-                    print("TODO: Multiple Images at Page %04d_%04d" % (i+1, j))
                 if (image_type[image_type_enum] == "JBIG"):
                     from jbigdec import CImage
                     cimage = CImage(image_data)
