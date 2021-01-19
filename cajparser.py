@@ -289,7 +289,7 @@ class CAJParser(object):
 
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
-            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
             caj.seek(page_data_offset)
             text_header_read32 = caj.read(32)
             if (text_header_read32[8:20] == b'COMPRESSTEXT'):
@@ -304,7 +304,8 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
             from HNParsePage import HNParsePage
-            page_data = HNParsePage(output)
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
 
             if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
@@ -395,7 +396,7 @@ class CAJParser(object):
 
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
-            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
             caj.seek(page_data_offset)
             text_header_read32 = caj.read(32)
             if (text_header_read32[8:20] == b'COMPRESSTEXT'):
@@ -410,7 +411,8 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
             from HNParsePage import HNParsePage
-            page_data = HNParsePage(output)
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
             print("Text on Page %d:" % (i+1))
             print(page_data.texts)
             #print("Figures:\n", page_data.figures)
@@ -423,8 +425,8 @@ class CAJParser(object):
         for i in range(self.page_num):
             caj.seek(self._TOC_END_OFFSET + i * 20)
             print("Reading Page Info struct #%d at offset 0x%04X" % (i+1, self._TOC_END_OFFSET + i * 20))
-            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, unk3] = struct.unpack("iihhii", caj.read(20))
-            print("unknown page struct members = (%d %d)" % (unk2, unk3))
+            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
+            print("unknown page struct members = (%d %d)" % (unk2, next_page_data_offset))
             # All 71: 1,0,0
             print("Page Number %d Data offset = 0x%04X" % (page_no, page_data_offset))
             caj.seek(page_data_offset)
@@ -453,6 +455,11 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
                 print("Page Text Header non-COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
+            from HNParsePage import HNParsePage
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
+            print("Text:\n", page_data.texts)
+            print("Figures:\n", page_data.figures)
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
