@@ -12,7 +12,7 @@ class HNParsePage(object):
         self.figures = []
         self.stats = {}
         self.offset = 0
-        def Text(self):
+        def Text(self, code):
             try:
                 self.characters.append(bytes([self.data[self.offset+5],self.data[self.offset+4]]).decode("gbk"))
             except UnicodeDecodeError:
@@ -39,23 +39,40 @@ class HNParsePage(object):
                     self.characters.append("<0x%04X>\n" % code)
             self.offset += 6
 
-        def Figure(self):
+        def TextMulti(self, code):
+            self.offset += 2
+            if (code == 0x8001):
+                self.characters.append("\n")
+            while (1):
+                if (self.data[self.offset+1] == 0x80):
+                    break
+                self.characters.append(bytes([self.data[self.offset+3],self.data[self.offset+2]]).decode("gbk"))
+                self.offset += 4
+
+        def Figure(self, code):
             (ignore1, offset_x, offset_y, size_x, size_y, int2, int3, int4, int5)= struct.unpack("<HHHHHIIII", self.data[self.offset:self.offset+26])
             # in units of 1/2.473 pixels
             self.figures.append([offset_x, offset_y, size_x, size_y])
             self.offset += 26
 
-        dispatch = {
-            0x8001 : Text,
-            0x800A : Figure,
-        }
+        if (not old_style):
+            dispatch = {
+                0x8001 : Text,
+                0x800A : Figure,
+            }
+        else:
+            dispatch = {
+                0x8001 : TextMulti,
+                0x8070 : TextMulti,
+                0x800A : Figure,
+            }
         dispatch_keys = dispatch.keys()
 
         while (self.offset < self.data_length):
             (dispatch_code,) = struct.unpack("H", self.data[self.offset:self.offset+2])
             self.offset += 2
             if (dispatch_code in dispatch_keys):
-                dispatch[dispatch_code](self)
+                dispatch[dispatch_code](self, dispatch_code)
             else:
                 self.offset +=2
                 if (dispatch_code in self.stats.keys()):
