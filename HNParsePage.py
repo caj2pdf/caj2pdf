@@ -5,7 +5,7 @@
 import struct
 
 class HNParsePage(object):
-    def __init__(self, data):
+    def __init__(self, data, old_style=False):
         self.data = data
         self.data_length = len(data)
         self.characters = []

@@ -304,7 +304,8 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
             from HNParsePage import HNParsePage
-            page_data = HNParsePage(output)
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
 
             if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
@@ -410,7 +411,8 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
             from HNParsePage import HNParsePage
-            page_data = HNParsePage(output)
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
             print("Text on Page %d:" % (i+1))
             print(page_data.texts)
             #print("Figures:\n", page_data.figures)
@@ -453,6 +455,11 @@ class CAJParser(object):
                 caj.seek(page_data_offset)
                 output = caj.read(size_of_text_section)
                 print("Page Text Header non-COMPRESSTEXT:\n", self.dump(output, GB=True), sep="")
+            from HNParsePage import HNParsePage
+            page_style = (next_page_data_offset > page_data_offset)
+            page_data = HNParsePage(output, page_style)
+            print("Text:\n", page_data.texts)
+            print("Figures:\n", page_data.figures)
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
