@@ -68,7 +68,7 @@ class HNParsePage(object):
             }
         dispatch_keys = dispatch.keys()
 
-        while (self.offset < self.data_length):
+        while (self.offset <= self.data_length - 2):
             (dispatch_code,) = struct.unpack("H", self.data[self.offset:self.offset+2])
             self.offset += 2
             if (dispatch_code in dispatch_keys):
