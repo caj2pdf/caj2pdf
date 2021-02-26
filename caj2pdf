@@ -43,7 +43,12 @@ if __name__ == "__main__":
     if args.command == "convert":
         caj = CAJParser(args.input)
         if args.output is None:
-            args.output = os.path.splitext(args.input)[0] + ".pdf"
+            if args.input.endswith(".caj"):
+                args.output = args.input.replace(".caj", ".pdf")
+            elif (len(args.input) > 4 and (args.input[-4] == '.' or args.input[-3] == '.') and not args.input.endswith(".pdf")):
+                args.output = os.path.splitext(args.input)[0] + ".pdf"
+            else:
+                args.output = args.input + ".pdf"
         caj.convert(args.output)
 
     if args.command == "outlines":
