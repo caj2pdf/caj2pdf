@@ -43,7 +43,7 @@ if __name__ == "__main__":
     if args.command == "convert":
         caj = CAJParser(args.input)
         if args.output is None:
-            args.output = args.input.replace(".caj", ".pdf")
+            args.output = os.path.splitext(args.input)[0] + ".pdf"
         caj.convert(args.output)
 
     if args.command == "outlines":
