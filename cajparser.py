@@ -46,6 +46,8 @@ class CAJParser(object):
                 self.format = "PDF"
             elif fmt == "KDH ":
                 self.format = "KDH"
+            elif fmt == "TEB":
+                self.format = "TEB"
             else:
                 self.format = None
                 raise SystemExit("Unknown file type.")
