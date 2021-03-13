@@ -28,6 +28,14 @@ class CAJParser(object):
                     self._TOC_END_OFFSET = 0x50
                     self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + 20 * self.page_num
                     return
+                if (caj_read4[0:2] == b'HN'):
+                    if (caj.read(2) == b'\xc8\x00'): # Most of them are: 90 01, handled later
+                        self.format = "HN"
+                        self._PAGE_NUMBER_OFFSET = 0x90
+                        self._TOC_NUMBER_OFFSET = 0
+                        self._TOC_END_OFFSET = 0xD8
+                        self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + 20 * self.page_num
+                        return
                 fmt = struct.unpack("4s", caj_read4)[0].replace(b'\x00', b'').decode("gb18030")
             if fmt == "CAJ":
                 self.format = "CAJ"
