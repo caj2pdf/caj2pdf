@@ -395,6 +395,8 @@ class CAJParser(object):
                 else:
                     raise SystemExit("Unknown Image Type %d" % (image_type_enum))
                 image_list.append(image_item)
+        if (len(image_list) == 0):
+            raise SystemExit("File is pure-text HN; cannot convert to pdf")
         pdf_data = convert_ImageList(image_list)
         with open(dest, 'wb') as f:
             f.write(pdf_data)
