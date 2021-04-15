@@ -398,8 +398,11 @@ class CAJParser(object):
         if (len(image_list) == 0):
             raise SystemExit("File is pure-text HN; cannot convert to pdf")
         pdf_data = convert_ImageList(image_list)
-        with open(dest, 'wb') as f:
+        with open('pdf_toc.pdf', 'wb') as f:
             f.write(pdf_data)
+        # Add Outlines
+        add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
+        os.remove("pdf_toc.pdf")
 
     def _text_extract_hn(self):
         if (self._TOC_NUMBER_OFFSET > 0):
