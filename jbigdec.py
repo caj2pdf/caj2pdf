@@ -22,9 +22,9 @@ import platform
 arch = platform.architecture()
 if (arch[1] == 'WindowsPE'):
     if (arch[0] == '64bit'):
-        libjbigdec = cdll.LoadLibrary("libjbigdec-w64.dll")
+        libjbigdec = cdll.LoadLibrary("./lib/bin/libjbigdec-w64.dll")
     else:
-        libjbigdec = cdll.LoadLibrary("libjbigdec-w32.dll")
+        libjbigdec = cdll.LoadLibrary("./lib/bin/libjbigdec-w32.dll")
 else:
     libjbigdec = cdll.LoadLibrary("./libjbigdec.so")
 

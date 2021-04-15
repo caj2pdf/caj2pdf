@@ -20,9 +20,9 @@ import platform
 arch = platform.architecture()
 if (arch[1] == 'WindowsPE'):
     if (arch[0] == '64bit'):
-        libjbig2codec = cdll.LoadLibrary("libjbig2codec-w64.dll")
+        libjbig2codec = cdll.LoadLibrary("./lib/bin/libjbig2codec-w64.dll")
     else:
-        libjbig2codec = cdll.LoadLibrary("libjbig2codec-w32.dll")
+        libjbig2codec = cdll.LoadLibrary("./lib/bin/libjbig2codec-w32.dll")
 else:
     libjbig2codec = cdll.LoadLibrary("./libjbig2codec.so")
 
