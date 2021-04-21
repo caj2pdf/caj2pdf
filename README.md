@@ -30,7 +30,7 @@ cc -Wall `pkg-config --cflags jbig2dec` -fPIC -shared -o libjbig2codec.so decode
 
 如果你对二进制文件分析、图像/文字压缩算法、逆向工程等领域中的一个或几个有所了解，欢迎帮助完善此项目。你可以从阅读[项目 Wiki](https://github.com/JeziL/caj2pdf/wiki) 开始，看看是否有可以发挥你特长的地方。**Pull requests are always welcome**.
 
-## How to use
+## How to use for linux
 
 ### 环境和依赖
 
@@ -63,6 +63,46 @@ caj2pdf outlines [input_file] -o/--output [pdf_file]
 caj2pdf show test.caj
 caj2pdf convert test.caj -o output.pdf
 caj2pdf outlines test.caj -o printed.pdf
+```
+
+## How to use for windows
+
+### 环境和依赖
+
+- Python 3.3+
+- [PyPDF2](https://github.com/mstamy2/PyPDF2)
+- [mutool](https://mupdf.com/downloads/)
+
+### 环境搭建
+
+1）安装pypdf2  
+　　pip install pypdf2  
+2）引入mutool工具  
+　　下载 mupdf-xxx-windows.zip ，解压缩包。  
+　　把mutool.exe执行文件放在项目根目录下（项目中已放置了v1.13.0版本）。　　
+
+
+### 用法
+
+```
+
+# 打印文件基本信息（文件类型、页面数、大纲项目数）
+python caj2pdf show [input_file]
+
+# 转换文件
+python caj2pdf convert [input_file] -o/--output [output_file]
+
+# 从 CAJ 文件中提取大纲信息并添加至 PDF 文件
+## 遇到不支持的文件类型或 Bug 时，可用 CAJViewer 打印 PDF 文件，并用这条命令为其添加大纲
+python caj2pdf outlines [input_file] -o/--output [pdf_file]
+```
+
+### 例
+
+```
+python caj2pdf show test.caj
+python caj2pdf convert test.caj -o output.pdf
+python caj2pdf outlines test.caj -o printed.pdf
 ```
 
 ### 异常输出（IMPORTANT!!!）
