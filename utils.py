@@ -185,6 +185,12 @@ def add_outlines(toc, filename, output):
     for p in pdf_in.pages:
         pdf_out.addPage(p)
     toc_num = len(toc)
+    if (toc_num == 0): # Just copy if toc empty
+        outputFile = open(output, "wb")
+        pdf_out.write(outputFile)
+        inputFile.close()
+        outputFile.close()
+        return
     idoix = len(pdf_out._objects) + 1
     idorefs = [PDF.IndirectObject(x + idoix, 0, pdf_out)
                for x in range(toc_num + 1)]

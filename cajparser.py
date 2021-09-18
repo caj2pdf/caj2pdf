@@ -71,6 +71,8 @@ class CAJParser(object):
 
     @property
     def toc_num(self):
+        if (self._TOC_NUMBER_OFFSET == 0):
+            return 0
         with open(self.filename, "rb") as caj:
             caj.seek(self._TOC_NUMBER_OFFSET)
             [toc_num] = struct.unpack("i", caj.read(4))
@@ -78,6 +80,8 @@ class CAJParser(object):
 
     def get_toc(self, verbose=False):
         toc = []
+        if (self._TOC_NUMBER_OFFSET == 0):
+            return toc
         with open(self.filename, "rb") as caj:
             for i in range(self.toc_num):
                 caj.seek(self._TOC_NUMBER_OFFSET + 4 + 0x134 * i)
