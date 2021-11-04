@@ -1,5 +1,6 @@
 import os
 import struct
+import imagesize
 from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
@@ -380,7 +381,12 @@ class CAJParser(object):
                         0
                     )
                 elif (image_type[image_type_enum] == "JPEG"):
-                    (height, width) = struct.unpack(">HH", image_data[163:167])
+                    #(height, width) = struct.unpack(">HH", image_data[163:167])
+                    with open(".tmp.jpg", "wb") as f:
+                        f.write(image_data)
+                    (width, height) = imagesize.get(".tmp.jpg")
+                    os.remove(".tmp.jpg")
+
                     if (image_type_enum == 1):
                         # non-inverted JPEG Images
                         height = -height
