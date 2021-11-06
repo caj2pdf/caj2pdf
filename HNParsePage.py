@@ -14,10 +14,9 @@ class HNParsePage(object):
         self.offset = 0
         def Text(self, code):
             try:
-                if len(self.data) > self.offset+5:
-                    self.characters.append(bytes([self.data[self.offset+5],self.data[self.offset+4]]).decode("gbk"))
-                else:
-                    pass
+                self.characters.append(bytes([self.data[self.offset+5],self.data[self.offset+4]]).decode("gbk"))
+            except IndexError: # short data, nothing to do
+                pass
             except UnicodeDecodeError:
                 # HTL: When cut-and-paste on Linux, these transform to GB18030,
                 # but I believe they are OCR artifacts. Where they occur,
