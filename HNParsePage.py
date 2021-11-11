@@ -52,6 +52,10 @@ class HNParsePage(object):
                 self.offset += 4
 
         def Figure(self, code):
+            try:
+                self.data[self.offset+25]
+            except IndexError: # short data, nothing to do
+                return
             (ignore1, offset_x, offset_y, size_x, size_y, int2, int3, int4, int5)= struct.unpack("<HHHHHIIII", self.data[self.offset:self.offset+26])
             # in units of 1/2.473 pixels
             self.figures.append([offset_x, offset_y, size_x, size_y])
