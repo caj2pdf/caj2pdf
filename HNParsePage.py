@@ -5,7 +5,7 @@
 import struct
 
 class HNParsePage(object):
-    def __init__(self, data, old_style=False):
+    def __init__(self, data, nfigure, old_style=False):
         self.data = data
         self.data_length = len(data)
         self.characters = []
@@ -52,10 +52,6 @@ class HNParsePage(object):
                 self.offset += 4
 
         def Figure(self, code):
-            try:
-                self.data[self.offset+25]
-            except IndexError: # short data, nothing to do
-                return
             (ignore1, offset_x, offset_y, size_x, size_y, int2, int3, int4, int5)= struct.unpack("<HHHHHIIII", self.data[self.offset:self.offset+26])
             # in units of 1/2.473 pixels
             self.figures.append([offset_x, offset_y, size_x, size_y])
@@ -85,6 +81,8 @@ class HNParsePage(object):
                     self.stats[dispatch_code] +=1
                 else:
                     self.stats[dispatch_code] = 1
+            if len(self.figures) == nfigure:
+                break
 
     @property
     def texts(self):
