@@ -397,8 +397,14 @@ class CAJParser(object):
                     if (image_type_enum == 1):
                         # non-inverted JPEG Images
                         height = -height
+
+                    from PIL import Image as pilimage
+                    with open(".tmp.jpg", "wb") as f:
+                        f.write(image_data)
+                    pim = pilimage.open(".tmp.jpg")
+
                     image_item = (
-                        Colorspace.RGB,
+                        Colorspace[pim.mode],
                         (300, 300),
                         ImageFormat.JPEG,
                         image_data,
@@ -409,6 +415,7 @@ class CAJParser(object):
                         8,
                         0
                     )
+                    os.remove(".tmp.jpg")
                 else:
                     raise SystemExit("Unknown Image Type %d" % (image_type_enum))
                 image_list.append(image_item)

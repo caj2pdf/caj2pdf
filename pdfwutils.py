@@ -1078,7 +1078,29 @@ class pdfdoc(object):
                 image1[PdfName.Height] = -Im_i['imgheightpx']
             else:
                 image1[PdfName.Height] = Im_i['imgheightpx']
-            image1[PdfName.ColorSpace] = PdfName.DeviceRGB
+
+            if Im_i['color'] == Colorspace["1"] or Im_i['color'] == Colorspace.L:
+                image1[PdfName.ColorSpace] = PdfName.DeviceGray
+            elif Im_i['color'] == Colorspace.RGB:
+                image1[PdfName.ColorSpace] = PdfName.DeviceRGB
+            elif Im_i['color'] == Colorspace.CMYK or Im_i['color'] == Colorspace["CMYK;I"]:
+                image1[PdfName.ColorSpace] = PdfName.DeviceCMYK
+            elif Im_i['color'] == Colorspace.P:
+                if self.with_pdfrw:
+                    raise Exception(
+                        "pdfrw does not support hex strings for "
+                        "palette image input, re-run with "
+                        "--without-pdfrw"
+                    )
+                image1[PdfName.ColorSpace] = [
+                    PdfName.Indexed,
+                    PdfName.DeviceRGB,
+                    len(palette) - 1,
+                    PdfString.encode(palette, hextype=True),
+                ]
+            else:
+                raise UnsupportedColorspaceError("unsupported color space: %s" % Im_i['color'].name)
+
             image1[PdfName.BitsPerComponent] = Im_i['depth']
 
             offset_x = coordinates[i][0] / 300 * 72 / 2.473
