@@ -4,6 +4,8 @@ from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
+from PyPDF2 import utils as utils
+
 KDH_PASSPHRASE = b"FZHMEI"
 
 printables = ''.join([(len(repr(chr(x)))==3) and (x != 47) and (x < 128) and chr(x) or '.' for x in range(256)])
@@ -290,7 +292,12 @@ class CAJParser(object):
             raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
 
         # Add Outlines
-        add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
+        try:
+            add_outlines(self.get_toc(), "pdf_toc.pdf", dest)
+        except utils.PdfReadError as e:
+            print("utils.PdfReadError:", str(e))
+            copy("pdf_toc.pdf", dest)
+            pass
         os.remove("pdf.tmp")
         os.remove("pdf_toc.pdf")
 
