@@ -289,7 +289,15 @@ class CAJParser(object):
             check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
         except CalledProcessError as e:
             print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            print("Command mutool returned non-zero exit status " + str(e.returncode))
+            print("Try merge mode...")
+            os.remove("pdf_toc.pdf")
+            try:
+                 check_output(["mutool", "merge", "-opdf_toc.pdf", "pdf.tmp"], stderr=STDOUT)
+            except CalledProcessError as e:
+                    print(e.output.decode("utf-8"))
+                    SystemExit("Merge mode also failed.")
+            
 
         # Add Outlines
         try:
