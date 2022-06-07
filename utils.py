@@ -1,7 +1,7 @@
 import os
 import sys
 import PyPDF2.generic as PDF
-from PyPDF2 import PdfFileWriter, PdfFileReader
+from PyPDF2 import PdfWriter, PdfReader
 
 
 class Node(object):
@@ -183,7 +183,7 @@ def add_outlines(toc, filename, output):
     inputFile = open(filename, 'rb')
     pdf_in = PdfFileReader(inputFile)
     for p in pdf_in.pages:
-        pdf_out.addPage(p)
+        pdf_out.add_page(p)
     toc_num = len(toc)
     if (toc_num == 0): # Just copy if toc empty
         outputFile = open(output, "wb")
