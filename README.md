@@ -35,7 +35,12 @@ cc -Wall `pkg-config --cflags jbig2dec` -fPIC -shared -o libjbig2codec.so decode
 ### 环境和依赖
 
 - Python 3.3+
-- [PyPDF2](https://github.com/mstamy2/PyPDF2)
+- [PyPDF2](https://github.com/mstamy2/PyPDF2) (1.28.4之前的版本)
+
+```
+pip install PyPDF2==1.28.4
+```
+
 - [mutool](https://mupdf.com/index.html)
 
 除了Microsoft Windows：我们提供Microsoft Windows 32-bit/64-bit DLLs，HN 格式需要
