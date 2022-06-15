@@ -1,7 +1,7 @@
 import os
 import sys
-import PyPDF2.pdf as PDF
-from PyPDF2 import PdfFileWriter, PdfFileReader
+import PyPDF2.generic as PDF
+from PyPDF2 import PdfWriter, PdfReader
 
 
 class Node(object):
@@ -149,7 +149,7 @@ def fnd_unuse_no(nos1, nos2):
 
 def make_dest(pdfw, pg):
     d = PDF.ArrayObject()
-    d.append(pdfw.getPage(pg).indirectRef)
+    d.append(pdfw.getPage(pg).indirect_ref)
     d.append(PDF.NameObject("/XYZ"))
     d.append(PDF.NullObject())
     d.append(PDF.NullObject())
@@ -183,7 +183,7 @@ def add_outlines(toc, filename, output):
     inputFile = open(filename, 'rb')
     pdf_in = PdfFileReader(inputFile)
     for p in pdf_in.pages:
-        pdf_out.addPage(p)
+        pdf_out.add_page(p)
     toc_num = len(toc)
     if (toc_num == 0): # Just copy if toc empty
         outputFile = open(output, "wb")
@@ -217,9 +217,9 @@ def add_outlines(toc, filename, output):
                     PDF.NameObject(v): idorefs[n.index]
                 })
         olitems.append(oli)
-    pdf_out._addObject(ol)
+    pdf_out._add_object(ol)
     for i in olitems:
-        pdf_out._addObject(i)
+        pdf_out._add_object(i)
     pdf_out._root_object.update({
         PDF.NameObject("/Outlines"): idorefs[0]
     })
