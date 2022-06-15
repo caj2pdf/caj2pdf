@@ -400,7 +400,7 @@ class CAJParser(object):
                             with open(".tmp.jpg", "wb") as f:
                                 f.write(image_data)
                                 (width, height) = imagesize.get(".tmp.jpg")
-                                os.remove(".tmp.jpg")
+                            os.remove(".tmp.jpg")
                     if (image_type_enum == 1):
                         # non-inverted JPEG Images
                         height = -height
