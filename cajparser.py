@@ -4,7 +4,10 @@ from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
 
-from PyPDF2 import errors
+try:
+    from PyPDF2 import errors
+except ImportError:
+    from PyPDF2 import utils as errors
 
 KDH_PASSPHRASE = b"FZHMEI"
 
