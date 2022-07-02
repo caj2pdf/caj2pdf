@@ -337,8 +337,7 @@ class CAJParser(object):
                     image_list.append(page_data.figures)
                 else:
                     print("Page %d, Image Count %d != %d" % (i+1, len(page_data.figures), images_per_page))
-                    image_list.append(None)
-                    image_list.append(page_data.figures[0:images_per_page])
+                    print("Page %d expanding to %d separate image pages" % (i+1, images_per_page))
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
