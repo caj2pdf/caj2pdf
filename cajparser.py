@@ -331,7 +331,7 @@ class CAJParser(object):
             page_style = (next_page_data_offset > page_data_offset)
             page_data = HNParsePage(output, page_style)
 
-            if ((len(page_data.figures) > 0) and (images_per_page > 1)):
+            if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
                     image_list.append(None)
                     image_list.append(page_data.figures)
@@ -339,8 +339,6 @@ class CAJParser(object):
                     print("Page %d, Image Count %d != %d" % (i+1, len(page_data.figures), images_per_page))
                     image_list.append(None)
                     image_list.append(page_data.figures[0:images_per_page])
-            else:
-                print("Page %d, Skipping images - Image Count %d, %d" % (i+1, len(page_data.figures), images_per_page))
             current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
