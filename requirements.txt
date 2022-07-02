@@ -1,2 +1,5 @@
 imagesize==1.3.0
 PyPDF2==2.2.0
+#
+# HTL, July 2022: imagesize 1.2.0 + PyPDF2 1.26.0 on fedora 36 (partially) works
+#
