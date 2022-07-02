@@ -333,8 +333,12 @@ class CAJParser(object):
 
             if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
-                    image_list.append(None)
-                    image_list.append(page_data.figures)
+                    if (page_data.figures[0][0] == 0) and (page_data.figures[0][1] == 0):
+                        image_list.append(None)
+                        image_list.append(page_data.figures)
+                    else:
+                        print("Page %d, Image Count %d, first image not at origin, expanding to %d pages"
+                              % (i+1, len(page_data.figures), images_per_page))
                 else:
                     print("Page %d, Image Count %d != %d" % (i+1, len(page_data.figures), images_per_page))
                     print("Page %d expanding to %d separate image pages" % (i+1, images_per_page))
