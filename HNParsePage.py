@@ -48,7 +48,12 @@ class HNParsePage(object):
             while (1):
                 if (self.data[self.offset+1] == 0x80):
                     break
-                self.characters.append(bytes([self.data[self.offset+3],self.data[self.offset+2]]).decode("gbk"))
+                try:
+                    self.characters.append(bytes([self.data[self.offset+3],self.data[self.offset+2]]).decode("gbk"))
+                except UnicodeDecodeError:
+                    self.characters.append("<0x%04X>\n" % (self.data[self.offset+3] * 256 + self.data[self.offset+2]))
+                except IndexError: # short data, nothing to do
+                    return
                 self.offset += 4
 
         def Figure(self, code):
