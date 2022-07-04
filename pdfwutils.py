@@ -1078,7 +1078,10 @@ class pdfdoc(object):
                 image1[PdfName.Height] = -Im_i['imgheightpx']
             else:
                 image1[PdfName.Height] = Im_i['imgheightpx']
-            image1[PdfName.ColorSpace] = PdfName.DeviceRGB
+            if Im_i['color'] == Colorspace.L:
+                image1[PdfName.ColorSpace] = PdfName.DeviceGray
+            else:
+                image1[PdfName.ColorSpace] = PdfName.DeviceRGB
             image1[PdfName.BitsPerComponent] = Im_i['depth']
 
             offset_x = coordinates[i][0] / 300 * 72 / 2.473
