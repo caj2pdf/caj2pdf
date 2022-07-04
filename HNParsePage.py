@@ -46,8 +46,11 @@ class HNParsePage(object):
             if (code == 0x8001):
                 self.characters.append("\n")
             while (1):
-                if (self.data[self.offset+1] == 0x80):
-                    break
+                try:
+                    if (self.data[self.offset+1] == 0x80):
+                        break
+                except IndexError: # short data, nothing to do
+                    return
                 try:
                     self.characters.append(bytes([self.data[self.offset+3],self.data[self.offset+2]]).decode("gbk"))
                 except UnicodeDecodeError:
