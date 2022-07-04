@@ -395,23 +395,31 @@ class CAJParser(object):
                         0
                     )
                 elif (image_type[image_type_enum] == "JPEG"):
+                    colorspace = Colorspace.RGB
+                    component = 3
                     # stock libjpeg location
-                    (SOFn, frame_length, bits_per_pixel, height, width) = struct.unpack(">HHBHH", image_data[158:167])
+                    (SOFn, frame_length, bits_per_pixel, height, width, component) = struct.unpack(">HHBHHB", image_data[158:168])
                     if (SOFn != 0xFFC0):
                         # "Intel(R) JPEG Library" location
-                        (SOFn, frame_length, bits_per_pixel, height, width) = struct.unpack(">HHBHH", image_data[0x272:0x27b])
+                        (SOFn, frame_length, bits_per_pixel, height, width, component) = struct.unpack(">HHBHHB", image_data[0x272:0x27c])
                         if (SOFn != 0xFFC0):
                             # neither works, try brute-force
                             import imagesize
+                            from PIL import Image as pilimage
                             with open(".tmp.jpg", "wb") as f:
                                 f.write(image_data)
                                 (width, height) = imagesize.get(".tmp.jpg")
+                                pim = pilimage.open(".tmp.jpg")
+                                if (pim.mode == 'L'):
+                                    component = 1
                             os.remove(".tmp.jpg")
                     if (image_type_enum == 1):
                         # non-inverted JPEG Images
                         height = -height
+                    if (component == 1):
+                        colorspace = Colorspace.L
                     image_item = (
-                        Colorspace.RGB,
+                        colorspace,
                         (300, 300),
                         ImageFormat.JPEG,
                         image_data,
