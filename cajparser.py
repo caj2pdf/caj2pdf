@@ -316,11 +316,14 @@ class CAJParser(object):
             [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
             caj.seek(page_data_offset)
             text_header_read32 = caj.read(32)
-            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
-                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+            if ((text_header_read32[8:20] == b'COMPRESSTEXT') or (text_header_read32[0:12] == b'COMPRESSTEXT')):
+                coff = 8
+                if (text_header_read32[0:12] == b'COMPRESSTEXT'):
+                    coff = 0
+                [expanded_text_size] = struct.unpack("i", text_header_read32[12+coff:16+coff])
                 import zlib
-                caj.seek(page_data_offset + 24)
-                data = caj.read(size_of_text_section - 24)
+                caj.seek(page_data_offset + 16 + coff)
+                data = caj.read(size_of_text_section - 16 - coff)
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     raise SystemExit("Unexpected:", len(output), expanded_text_size)
@@ -462,11 +465,14 @@ class CAJParser(object):
             [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
             caj.seek(page_data_offset)
             text_header_read32 = caj.read(32)
-            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
-                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+            if ((text_header_read32[8:20] == b'COMPRESSTEXT') or (text_header_read32[0:12] == b'COMPRESSTEXT')):
+                coff = 8
+                if (text_header_read32[0:12] == b'COMPRESSTEXT'):
+                    coff = 0
+                [expanded_text_size] = struct.unpack("i", text_header_read32[12+coff:16+coff])
                 import zlib
-                caj.seek(page_data_offset + 24)
-                data = caj.read(size_of_text_section - 24)
+                caj.seek(page_data_offset + 16 + coff)
+                data = caj.read(size_of_text_section - 16 - coff)
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     raise SystemExit("Unexpected:", len(output), expanded_text_size)
@@ -498,12 +504,15 @@ class CAJParser(object):
             # The first 8 bytes are always: 03 80 XX 16 03 80 XX XX,
             # the last one 20 or 21, but the first two can be any.
             # 48/71 has: 03 80 E0 16 03 80 F7 20, the rest uniq
-            if (text_header_read32[8:20] == b'COMPRESSTEXT'):
+            if ((text_header_read32[8:20] == b'COMPRESSTEXT') or (text_header_read32[0:12] == b'COMPRESSTEXT')):
+                coff = 8
+                if (text_header_read32[0:12] == b'COMPRESSTEXT'):
+                    coff = 0
                 # expanded_text_size seems to be always about 2-3 times size_of_text_section, so this is a guess.
-                [expanded_text_size] = struct.unpack("i", text_header_read32[20:24])
+                [expanded_text_size] = struct.unpack("i", text_header_read32[12+coff:16+coff])
                 import zlib
-                caj.seek(page_data_offset + 24)
-                data = caj.read(size_of_text_section - 24)
+                caj.seek(page_data_offset + 16 + coff)
+                data = caj.read(size_of_text_section - 16 - coff)
                 output = zlib.decompress(data, bufsize=expanded_text_size)
                 if (len(output) != expanded_text_size):
                     print("Unexpected:", len(output), expanded_text_size)
