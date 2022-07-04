@@ -61,11 +61,10 @@ if __name__ == '__main__':
 
     # PBM is only padded to 8 rather than 32.
     # If the padding is larger, write padded file.
-    width = cimage.width
     if (cimage.bytes_per_line > ((cimage.width +7) >> 3)):
-        width = cimage.bytes_per_line << 3
+        cimage.width = bytes_per_line << 3
 
     with open(sys.argv[2], "wb") as fout:
         fout.write("P4\n".encode("ascii"))
-        fout.write(("%d %d\n" % (width, cimage.height)).encode("ascii"))
+        fout.write(("%d %d\n" % (cimage.width, cimage.height)).encode("ascii"))
         fout.write(out)
