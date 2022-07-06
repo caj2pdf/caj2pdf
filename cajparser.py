@@ -2,7 +2,7 @@ import os
 import struct
 from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
-from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no
+from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no, find_redundant_images
 
 try:
     from PyPDF2 import errors
@@ -334,19 +334,14 @@ class CAJParser(object):
             page_style = (next_page_data_offset > page_data_offset)
             page_data = HNParsePage(output, page_style)
 
+            current_offset = page_data_offset + size_of_text_section
+            (found, images_per_page) = find_redundant_images(caj, current_offset, images_per_page)
+            if (found):
+                print("Page %d, skipping %d redundant images" % (i+1, images_per_page * ( images_per_page - 1)))
+
             if (images_per_page > 1):
                 if (len(page_data.figures) == images_per_page):
                     if (page_data.figures[0][0] == 0) and (page_data.figures[0][1] == 0):
-                        image_list.append(None)
-                        image_list.append(page_data.figures)
-                    else:
-                        print("Page %d, Image Count %d, first image not at origin, expanding to %d pages"
-                              % (i+1, len(page_data.figures), images_per_page))
-                elif (len(page_data.figures) * len(page_data.figures) == images_per_page):
-                    if (page_data.figures[0][0] == 0) and (page_data.figures[0][1] == 0):
-                        print("Page %d, Image Count %d != %d, skipping %d redundant images"
-                              % (i+1, len(page_data.figures), images_per_page, images_per_page - len(page_data.figures)))
-                        images_per_page = len(page_data.figures)
                         image_list.append(None)
                         image_list.append(page_data.figures)
                     else:
@@ -360,7 +355,6 @@ class CAJParser(object):
                         image_list.append(page_data.figures[0:images_per_page])
                     else:
                         print("Page %d expanding to %d separate image pages" % (i+1, images_per_page))
-            current_offset = page_data_offset + size_of_text_section
             for j in range(images_per_page):
                 caj.seek(current_offset)
                 read32 = caj.read(32)

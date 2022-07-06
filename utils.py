@@ -1,5 +1,6 @@
 import os
 import sys
+import struct
 import PyPDF2.generic as PDF
 try:
     from PyPDF2 import PdfWriter, PdfReader
@@ -243,3 +244,35 @@ def add_outlines(toc, filename, output):
     pdf_out.write(outputFile)
     inputFile.close()
     outputFile.close()
+
+# See if the page is N * N images, N images written N times,
+# by checking image sizes and within 1 < N <= 10.
+# Return True and N if that's the case.
+def find_redundant_images(caj, initial_offset, images_per_page):
+    sqrts = {
+        4  : 2,
+        9  : 3,
+        16 : 4,
+        25 : 5,
+        36 : 6,
+        49 : 7,
+        64 : 8,
+        81 : 9,
+        100 : 10,
+    }
+
+    if (not (images_per_page in sqrts.keys())):
+        return (False, images_per_page)
+    stride = sqrts[images_per_page]
+    sizes = []
+    current_offset = initial_offset
+    for j in range(images_per_page):
+        caj.seek(current_offset)
+        read32 = caj.read(32)
+        [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+        if ((j >= stride) and (size_of_image_data != sizes[j-stride])):
+            return (False, images_per_page)
+        sizes.append(size_of_image_data)
+        current_offset = offset_to_image_data + size_of_image_data
+    # if we reach here, the image sizes seen are [A, B, C ... N, ..., A, B, C ... N] exactly N times.
+    return (True, stride)
