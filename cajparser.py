@@ -355,6 +355,14 @@ class CAJParser(object):
                         image_list.append(page_data.figures[0:images_per_page])
                     else:
                         print("Page %d expanding to %d separate image pages" % (i+1, images_per_page))
+            elif (images_per_page == 1):
+                if ((len(page_data.figures) == 0) or
+                    ((len(page_data.figures) > 0) and
+                    (not ((page_data.figures[0][0] == 0) and (page_data.figures[0][1] == 0))))):
+                    print("Page %d possibly text-only + single figure(%d)" % (i+1, len(page_data.figures)))
+            else:
+                # don't care about images_per_page == 0
+                pass
             for j in range(images_per_page):
                 caj.seek(current_offset)
                 read32 = caj.read(32)
