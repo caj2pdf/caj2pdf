@@ -155,9 +155,9 @@ def fnd_unuse_no(nos1, nos2):
 def make_dest(pdfw, pg):
     d = PDF.ArrayObject()
     try:
-        d.append(pdfw.getPage(pg).indirect_ref)
+        d.append(pdfw.pages[pg].indirect_ref)
     except AttributeError:
-        d.append(pdfw.getPage(pg).indirectRef)
+        d.append(pdfw.pages[pg].indirectRef)
     d.append(PDF.NameObject("/XYZ"))
     d.append(PDF.NullObject())
     d.append(PDF.NullObject())
