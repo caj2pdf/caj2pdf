@@ -78,11 +78,9 @@ class BTree(object):
 
 def fnd(f, s, start=0):
     fsize = f.seek(0, os.SEEK_END)
-    f.seek(0)
     bsize = 4096
     buffer = None
-    if start > 0:
-        f.seek(start)
+    f.seek(start)
     overlap = len(s) - 1
     while True:
         if overlap <= f.tell() < fsize:
