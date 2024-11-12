@@ -13,7 +13,7 @@ if __name__ == "__main__":
     show_parser.add_argument("input", help="Path to the CAJ file.")
 
     convert_parser = subparsers.add_parser("convert", help="Convert the CAJ file to PDF file.")
-    convert_parser.add_argument("input", help="Path to the CAJ file.")
+    convert_parser.add_argument("input",nargs='*', help="Path to the CAJ file.")
     convert_parser.add_argument("-o", "--output", help="Output path to the PDF file.", required=False)
 
     outlines_parser = subparsers.add_parser("outlines", help="Extract outlines from the CAJ file and add it to PDF file.")
@@ -41,15 +41,19 @@ if __name__ == "__main__":
             ))
 
     if args.command == "convert":
-        caj = CAJParser(args.input)
-        if args.output is None:
-            if args.input.endswith(".caj"):
-                args.output = args.input.replace(".caj", ".pdf")
-            elif (len(args.input) > 4 and (args.input[-4] == '.' or args.input[-3] == '.') and not args.input.endswith(".pdf")):
-                args.output = os.path.splitext(args.input)[0] + ".pdf"
+        if args.output and len(args.input) > 1:
+            raise SystemExit("can not set output name when multi input file.")
+        for file in args.input:
+            print(file)
+            caj = CAJParser(file)
+            out = None
+            if file.endswith(".caj"):
+                out = file.replace(".caj", ".pdf")
+            elif (len(file) > 4 and (file[-4] == '.' or file[-3] == '.') and not file.endswith(".pdf")):
+                out = os.path.splitext(file)[0] + ".pdf"
             else:
-                args.output = args.input + ".pdf"
-        caj.convert(args.output)
+                out = file + ".pdf"
+            caj.convert(out)
 
     if args.command == "outlines":
         caj = CAJParser(args.input)
