@@ -2,6 +2,8 @@ import os
 import struct
 from shutil import copy
 from subprocess import check_output, STDOUT, CalledProcessError
+
+import pymupdf
 from utils import fnd, fnd_all, add_outlines, fnd_rvrs, fnd_unuse_no, find_redundant_images
 
 try:
@@ -147,6 +149,14 @@ class CAJParser(object):
         elif self.format == "KDH":
             pass
 
+    def clean_pdf(self, tmp: str, out: str):
+        doc = pymupdf.open(tmp)
+        # ("keep", "none", "rc4-40", "rc4-128", "aes-128", "aes-256")
+        doc.save(
+            out,
+            encryption=1,  # none
+        )
+
     def _convert_caj(self, dest):
         caj = open(self.filename, "rb")
 
@@ -289,10 +299,9 @@ class CAJParser(object):
 
         # Use mutool to repair xref
         try:
-            check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
-        except CalledProcessError as e:
-            print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            self.clean_pdf("pdf.tmp", "pdf_toc.pdf")
+        except Exception as e:
+            raise SystemExit("PyMuPDF error " + str(e))
 
         # Add Outlines
         try:
@@ -632,9 +641,8 @@ class CAJParser(object):
 
         # Use mutool to repair xref
         try:
-            check_output(["mutool", "clean", dest + ".tmp", dest], stderr=STDOUT)
-        except CalledProcessError as e:
-            print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
-
+            self.clean_pdf(dest + ".tmp", dest)
+        except Exception as e:
+            raise SystemExit("PyMuPDF error " + str(e))
+        
         os.remove(dest + ".tmp")
