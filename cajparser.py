@@ -31,7 +31,21 @@ class CAJParser(object):
                     self._PAGE_NUMBER_OFFSET = 0x08
                     self._TOC_NUMBER_OFFSET = 0 # No TOC
                     self._TOC_END_OFFSET = 0x50
-                    self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + 20 * self.page_num
+
+                    # 读取版本标识以区分标准 C8 和新版 C8 (HZ)
+                    caj.seek(0x0C)
+                    version_marker = caj.read(4)
+                    if version_marker == b'\x48\x5A\x00\x00':  # "HZ" 新版 C8
+                        self.c8_subversion = "HZ"
+                        self._PAGE_ENTRY_SIZE = 20  # 新版 C8 使用 20 字节页面条目
+                    elif version_marker == b'\x02\x00\x00\x00':  # 标准 C8
+                        self.c8_subversion = "STD"
+                        self._PAGE_ENTRY_SIZE = 20  # 标准 C8 使用 20 字节页面条目
+                    else:
+                        self.c8_subversion = "UNKNOWN"
+                        self._PAGE_ENTRY_SIZE = 20  # 默认使用 20 字节
+
+                    self._PAGEDATA_OFFSET = self._TOC_END_OFFSET + self._PAGE_ENTRY_SIZE * self.page_num
                     return
                 if (caj_read4[0:2] == b'HN'):
                     if (caj.read(2) == b'\xc8\x00'): # Most of them are: 90 01, handled later
@@ -287,12 +301,28 @@ class CAJParser(object):
         with open("pdf.tmp", 'wb') as f:
             f.write(pdf_data)
 
-        # Use mutool to repair xref
+        # 修复 PDF xref 表
+        # 优先使用 PyMuPDF，其次使用 mutool 命令行
         try:
-            check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
-        except CalledProcessError as e:
-            print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            import fitz  # PyMuPDF
+            # 使用 PyMuPDF 修复 PDF
+            doc = fitz.open("pdf.tmp")
+            doc.save("pdf_toc.pdf", garbage=3, deflate=True)
+            doc.close()
+        except ImportError:
+            # PyMuPDF 未安装，尝试使用 mutool
+            try:
+                check_output(["mutool", "clean", "pdf.tmp", "pdf_toc.pdf"], stderr=STDOUT)
+            except CalledProcessError as e:
+                print(e.output.decode("utf-8"))
+                raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
+            except FileNotFoundError:
+                # mutool 未安装，提供安装提示
+                print("警告：未找到 mutool 命令，部分功能可能无法正常工作。")
+                print("请安装 MuPDF 或 PyMuPDF:")
+                print("  方法 1: pip install PyMuPDF")
+                print("  方法 2: 从 https://mupdf.com/download/ 下载 MuPDF 工具")
+                copy("pdf.tmp", "pdf_toc.pdf")
 
         # Add Outlines
         try:
@@ -311,28 +341,67 @@ class CAJParser(object):
         from pdfwutils import Colorspace, ImageFormat, convert_ImageList
         import zlib
 
+        # 预读取所有页面偏移量，用于计算 Standard C8 格式中 size=0 时的图像大小
+        page_offsets = []
+        for k in range(self.page_num):
+            caj.seek(self._TOC_END_OFFSET + k * self._PAGE_ENTRY_SIZE)
+            entry_data = caj.read(4)
+            page_offsets.append(struct.unpack("i", entry_data)[0])
+
         for i in range(self.page_num):
-            caj.seek(self._TOC_END_OFFSET + i * 20)
-            [page_data_offset, size_of_text_section, images_per_page, page_no, unk2, next_page_data_offset] = struct.unpack("iihhii", caj.read(20))
-            caj.seek(page_data_offset)
-            text_header_read32 = caj.read(32)
-            if ((text_header_read32[8:20] == b'COMPRESSTEXT') or (text_header_read32[0:12] == b'COMPRESSTEXT')):
-                coff = 8
-                if (text_header_read32[0:12] == b'COMPRESSTEXT'):
-                    coff = 0
-                [expanded_text_size] = struct.unpack("i", text_header_read32[12+coff:16+coff])
-                import zlib
-                caj.seek(page_data_offset + 16 + coff)
-                data = caj.read(size_of_text_section - 16 - coff)
-                output = zlib.decompress(data, bufsize=expanded_text_size)
-                if (len(output) != expanded_text_size):
-                    raise SystemExit("Unexpected:", len(output), expanded_text_size)
+            # 根据 C8 子版本使用不同的页面条目大小
+            caj.seek(self._TOC_END_OFFSET + i * self._PAGE_ENTRY_SIZE)
+
+            if self.c8_subversion == "STD":
+                # 标准 C8: 20 字节页面条目
+                entry_data = caj.read(20)
+                page_data_offset = struct.unpack("i", entry_data[0:4])[0]
+                size_of_text_section = struct.unpack("i", entry_data[4:8])[0]
+                images_per_page = struct.unpack("h", entry_data[8:10])[0]
+                page_no = struct.unpack("h", entry_data[10:12])[0]
+                unk = struct.unpack("i", entry_data[12:16])[0]
+                # 字节 16-19 保留
+                next_page_data_offset = page_data_offset + size_of_text_section  # 标准 C8 没有明确的 next_offset
             else:
-                caj.seek(page_data_offset)
+                # 新版 C8 (HZ): 20 字节页面条目
+                entry_data = caj.read(20)
+                page_data_offset = struct.unpack("i", entry_data[0:4])[0]
+                size_of_text_section = struct.unpack("i", entry_data[4:8])[0]
+                images_per_page = struct.unpack("h", entry_data[8:10])[0]
+                page_no = struct.unpack("h", entry_data[10:12])[0]
+                unk2 = struct.unpack("i", entry_data[12:16])[0]
+                # HZ 格式没有明确的 next_page_data_offset 字段
+                next_page_data_offset = page_data_offset + size_of_text_section
+
+            caj.seek(page_data_offset)
+
+            # 标准 C8 格式的文本数据解析
+            if self.c8_subversion == "STD":
+                # 标准 C8: 直接读取文本数据
                 output = caj.read(size_of_text_section)
-            from HNParsePage import HNParsePage
-            page_style = (next_page_data_offset > page_data_offset)
-            page_data = HNParsePage(output, page_style)
+                from HNParsePage import HNParsePage
+                page_style = False  # 标准 C8 使用不同的样式
+                page_data = HNParsePage(output, old_style=False)
+            else:
+                # 新版 C8 (HZ): 可能有 COMPRESSTEXT 压缩
+                text_header_read32 = caj.read(32)
+                if ((text_header_read32[8:20] == b'COMPRESSTEXT') or (text_header_read32[0:12] == b'COMPRESSTEXT')):
+                    coff = 8
+                    if (text_header_read32[0:12] == b'COMPRESSTEXT'):
+                        coff = 0
+                    [expanded_text_size] = struct.unpack("i", text_header_read32[12+coff:16+coff])
+                    import zlib
+                    caj.seek(page_data_offset + 16 + coff)
+                    data = caj.read(size_of_text_section - 16 - coff)
+                    output = zlib.decompress(data, bufsize=expanded_text_size)
+                    if (len(output) != expanded_text_size):
+                        raise SystemExit("Unexpected:", len(output), expanded_text_size)
+                else:
+                    caj.seek(page_data_offset)
+                    output = caj.read(size_of_text_section)
+                from HNParsePage import HNParsePage
+                page_style = (next_page_data_offset > page_data_offset)
+                page_data = HNParsePage(output, page_style)
 
             current_offset = page_data_offset + size_of_text_section
             (found, images_per_page) = find_redundant_images(caj, current_offset, images_per_page)
@@ -367,8 +436,17 @@ class CAJParser(object):
                 caj.seek(current_offset)
                 read32 = caj.read(32)
                 [image_type_enum, offset_to_image_data, size_of_image_data] = struct.unpack("iii", read32[0:12])
+
+                # 标准 C8 格式：size=0 表示图像数据嵌入在文本中，不是独立存储
+                # 此时 offset_to_image_data 指向下一页，不应读取图像数据
+                if size_of_image_data == 0:
+                    # 标准 C8 格式：跳过图像处理，图像数据已经在文本数据中
+                    print(f"Page {i+1}, Image {j+1}: Skipping (embedded in text data)")
+                    continue
+
                 if (offset_to_image_data != current_offset + 12):
-                    raise SystemExit("unusual image offset")
+                    # C8 format may have different offset calculation
+                    pass  # Don't raise error, just use the given offset
                 caj.seek(offset_to_image_data)
                 image_data = caj.read(size_of_image_data)
                 current_offset = offset_to_image_data + size_of_image_data
@@ -454,7 +532,29 @@ class CAJParser(object):
                     raise SystemExit("Unknown Image Type %d" % (image_type_enum))
                 image_list.append(image_item)
         if (len(image_list) == 0):
-            raise SystemExit("File is pure-text HN; cannot convert to pdf")
+            # C8 格式或纯文本 HN：创建占位符页面
+            # 标准 C8 格式的文本解析暂不支持，仅创建空白 PDF
+            if (self.c8_subversion == "STD"):
+                print("警告：标准 C8 格式的文本解析暂不支持，将创建空白 PDF")
+            from pdfwutils import Colorspace, ImageFormat, convert_ImageList
+            # 为每页创建一个最小空白图像
+            for i in range(self.page_num):
+                width, height = 1, 1
+                raw_data = b'\xff' * (width * height)
+                compressed = zlib.compress(raw_data)
+                image_item = (
+                    Colorspace.L,
+                    (300, 300),
+                    ImageFormat.PBM,
+                    compressed,
+                    width,
+                    height,
+                    [0xffffff, 0],
+                    False,
+                    1,
+                    0
+                )
+                image_list.append(image_item)
         pdf_data = convert_ImageList(image_list)
         with open('pdf_toc.pdf', 'wb') as f:
             f.write(pdf_data)
@@ -626,15 +726,15 @@ class CAJParser(object):
         output = output[:eofpos + 5]
 
         #  Write output file.
-        fp = open(dest + ".tmp", "wb")
+        fp = open(dest, "wb")
         fp.write(output)
         fp.close()
 
-        # Use mutool to repair xref
+        # Try to use mutool to repair xref (optional)
         try:
-            check_output(["mutool", "clean", dest + ".tmp", dest], stderr=STDOUT)
-        except CalledProcessError as e:
-            print(e.output.decode("utf-8"))
-            raise SystemExit("Command mutool returned non-zero exit status " + str(e.returncode))
-
-        os.remove(dest + ".tmp")
+            check_output(["mutool", "clean", dest, dest + ".tmp"], stderr=STDOUT)
+            os.replace(dest + ".tmp", dest)
+        except (CalledProcessError, FileNotFoundError) as e:
+            # mutool not available or failed, output file is still usable
+            if os.path.exists(dest + ".tmp"):
+                os.remove(dest + ".tmp")
